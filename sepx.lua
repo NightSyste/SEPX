@@ -27,35 +27,30 @@ else
     ParentContainer = LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- ═══════════════════════════════════════════════════════════════════
--- 🎨 NIGHT SYSTEM FARBSCHEMA (Obsidian Black, Crimson Red & Steel)
--- ═══════════════════════════════════════════════════════════════════
+-- Farbschema (Obsidian Cyber)
 Library.Theme = {
-    -- Backgrounds (Matte Carbon & Deep Obsidian)
-    Base = Color3.fromRGB(9, 10, 14),
-    Sidebar = Color3.fromRGB(12, 13, 18),
-    Card = Color3.fromRGB(16, 17, 24),
-    Elevated = Color3.fromRGB(22, 24, 33),
-    Input = Color3.fromRGB(11, 12, 17),
+    ObsidianBase = Color3.fromRGB(11, 14, 20),
+    ObsidianSidebar = Color3.fromRGB(13, 17, 25),
+    ObsidianCard = Color3.fromRGB(16, 21, 30),
+    ObsidianElevated = Color3.fromRGB(22, 28, 40),
+    InputDark = Color3.fromRGB(13, 17, 25),
     
-    -- Night System Signature Accents (Crimson Red & Gunmetal Steel)
-    RedPrimary = Color3.fromRGB(235, 35, 52),     -- Leuchtendes Crimson Rot
-    RedLight = Color3.fromRGB(255, 65, 85),       -- Neon Edge Rot
-    RedDark = Color3.fromRGB(150, 15, 28),        -- Deep Carbon Wine
+    GoldPrimary = Color3.fromRGB(221, 176, 116),
+    GoldDark = Color3.fromRGB(182, 126, 63),
+    GoldLight = Color3.fromRGB(242, 204, 153),
     
-    SteelLight = Color3.fromRGB(215, 222, 232),   -- Gebürstetes Titan / Silber
-    SteelMedium = Color3.fromRGB(130, 138, 152),  -- Gunmetal Grau
-    SteelDark = Color3.fromRGB(55, 60, 72),       -- Dark Metal
+    PetrolPrimary = Color3.fromRGB(34, 104, 121),
+    PetrolLight = Color3.fromRGB(45, 135, 155),
+    PetrolDark = Color3.fromRGB(23, 78, 90),
     
-    -- Typography
     TextWhite = Color3.fromRGB(255, 255, 255),
-    TextBody = Color3.fromRGB(225, 229, 238),
-    TextSecondary = Color3.fromRGB(145, 153, 168),
-    TextMuted = Color3.fromRGB(85, 92, 108),
-    TextDarkButton = Color3.fromRGB(255, 255, 255),
+    TextBody = Color3.fromRGB(225, 232, 242),
+    TextSecondary = Color3.fromRGB(150, 168, 192),
+    TextMuted = Color3.fromRGB(98, 114, 136),
+    TextDarkButton = Color3.fromRGB(18, 14, 8),
     
     StatusGreen = Color3.fromRGB(65, 225, 145),
-    StatusRed = Color3.fromRGB(255, 55, 75),
+    StatusRed = Color3.fromRGB(235, 75, 75),
     
     FontBlack = Enum.Font.GothamBold,
     FontBold = Enum.Font.GothamBold,
@@ -99,21 +94,20 @@ end
 
 local animatedStrokes = {}
 
--- Night System Dual-Tone Stroke (Crimson Red to Gunmetal Steel)
-local function addNightStroke(inst, thickness, trans, enableRotation)
+local function addDualToneStroke(inst, thickness, trans, enableRotation)
     local stroke = create("UIStroke", {
-        Color = Library.Theme.RedPrimary,
+        Color = Library.Theme.GoldPrimary,
         Thickness = thickness or 1.1,
-        Transparency = trans or 0.45,
+        Transparency = trans or 0.4,
         ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     })
     
     local gradient = create("UIGradient", {
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Library.Theme.RedPrimary),
-            ColorSequenceKeypoint.new(0.35, Library.Theme.RedLight),
-            ColorSequenceKeypoint.new(0.65, Library.Theme.SteelLight),
-            ColorSequenceKeypoint.new(1, Library.Theme.SteelDark)
+            ColorSequenceKeypoint.new(0, Library.Theme.GoldPrimary),
+            ColorSequenceKeypoint.new(0.45, Library.Theme.GoldLight),
+            ColorSequenceKeypoint.new(0.55, Library.Theme.PetrolLight),
+            ColorSequenceKeypoint.new(1, Library.Theme.PetrolPrimary)
         }),
         Rotation = 45
     })
@@ -173,6 +167,10 @@ function Library:GetExecutor()
         return "SirHurt"
     elseif OXYGEN_LOADED then
         return "Oxygen U"
+    elseif pebc_create then
+        return "ProtoSmasher"
+    elseif shadow_cheats then
+        return "Shadow"
     elseif gethui then
         return "Wave / UNC"
     else
@@ -186,7 +184,7 @@ function Library:GetHWID()
         return string.sub(raw, 1, 14) .. "..."
     end
     local id = tostring(LocalPlayer.UserId * 1337)
-    return "NS-" .. string.sub(id, 1, 8)
+    return "SEPX-" .. string.sub(id, 1, 8)
 end
 
 -- Root GUI Container & Toast
@@ -196,12 +194,12 @@ local ToastContainer = nil
 local function ensureGui()
     if ScreenGui and ScreenGui.Parent then return ScreenGui end
     
-    if ParentContainer:FindFirstChild("NIGHT_SYSTEM_HUB") then
-        ParentContainer:FindFirstChild("NIGHT_SYSTEM_HUB"):Destroy()
+    if ParentContainer:FindFirstChild("SEPX_Enterprise_Hub") then
+        ParentContainer:FindFirstChild("SEPX_Enterprise_Hub"):Destroy()
     end
 
     ScreenGui = create("ScreenGui", {
-        Name = "NIGHT_SYSTEM_HUB",
+        Name = "SEPX_Enterprise_Hub",
         ResetOnSpawn = false,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
         DisplayOrder = 99999,
@@ -230,7 +228,7 @@ local function ensureGui()
     return ScreenGui
 end
 
--- Notifier mit Night System Glow
+-- Universeller Notifier (Unterstützt Orion-Style Table ODER 3 Parameter)
 function Library:Notify(titleOrConfig, message, isSuccess)
     ensureGui()
     local title = "Notification"
@@ -240,13 +238,13 @@ function Library:Notify(titleOrConfig, message, isSuccess)
     local customIcon = nil
 
     if type(titleOrConfig) == "table" then
-        title = titleOrConfig.Title or titleOrConfig.Name or "Night System"
+        title = titleOrConfig.Title or titleOrConfig.Name or "Notification"
         desc = titleOrConfig.Content or titleOrConfig.Description or titleOrConfig.Text or ""
         customIcon = titleOrConfig.Image or titleOrConfig.Icon
         duration = titleOrConfig.Time or titleOrConfig.Duration or 3.2
         success = (titleOrConfig.Success ~= false)
     else
-        title = tostring(titleOrConfig or "Night System")
+        title = tostring(titleOrConfig or "Notification")
         desc = tostring(message or "")
         success = (isSuccess ~= false)
     end
@@ -254,7 +252,7 @@ function Library:Notify(titleOrConfig, message, isSuccess)
     local toast = create("Frame", {
         Name = "Toast",
         Size = UDim2.new(1, 0, 0, 58),
-        BackgroundColor3 = Library.Theme.Base,
+        BackgroundColor3 = Library.Theme.ObsidianBase,
         BackgroundTransparency = 0.15,
         Position = UDim2.new(1, 350, 0, 0),
         ZIndex = 151
@@ -271,7 +269,7 @@ function Library:Notify(titleOrConfig, message, isSuccess)
             Position = UDim2.new(0, 0, 0.5, -9),
             BackgroundTransparency = 1,
             Image = customIcon or (success and Library.Icons.Check or Library.Icons.Sparkle),
-            ImageColor3 = success and Library.Theme.RedPrimary or Library.Theme.SteelLight,
+            ImageColor3 = success and Library.Theme.GoldPrimary or Library.Theme.PetrolLight,
             ZIndex = 152
         }),
         create("TextLabel", {
@@ -298,7 +296,7 @@ function Library:Notify(titleOrConfig, message, isSuccess)
             ZIndex = 152
         })
     })
-    addNightStroke(toast, 1.1, 0.3, false)
+    addDualToneStroke(toast, 1.1, 0.3, false)
     toast.Parent = ToastContainer
 
     TweenService:Create(toast, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
@@ -319,13 +317,13 @@ function Library:Notify(titleOrConfig, message, isSuccess)
 end
 
 -- ====================================================================
--- 🖥️ WINDOW ERSTELLUNG (NIGHT SYSTEM THEME)
+-- WINDOW ERSTELLUNG (Window:MakeTab, AddToggle, AddSlider, AddButton etc.)
 -- ====================================================================
 function Library:CreateWindow(config)
     config = config or {}
-    local Title = config.Name or config.Title or "NIGHT SYSTEM"
-    local SubTitle = config.SubTitle or config.Subtitle or "Enterprise Edition • v3.0"
-    local IntroText = config.IntroText or "NIGHT SYSTEM"
+    local Title = config.Name or config.Title or "SEPX HUB"
+    local SubTitle = config.SubTitle or config.Subtitle or "Enterprise Edition • v2.4"
+    local IntroText = config.IntroText or "LOADED UI"
     local IntroDuration = config.IntroDuration or 4
     local EnableIntro = (config.EnableIntro ~= false)
     local CustomLogo = config.Logo or config.Icon or nil
@@ -338,23 +336,23 @@ function Library:CreateWindow(config)
         _isMinimized = false
     }
 
-    -- Hauptfenster
+    -- Hauptfenster Frame
     local MainFrame = create("Frame", {
         Name = "MainFrame",
         Size = UDim2.new(0, 840, 0, 540),
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
-        BackgroundColor3 = Library.Theme.Base,
-        BackgroundTransparency = 0.08,
+        BackgroundColor3 = Library.Theme.ObsidianBase,
+        BackgroundTransparency = 0.1,
         Visible = not EnableIntro,
         ClipsDescendants = true
     }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 18) })
+        create("UICorner", { CornerRadius = UDim.new(0, 20) })
     })
     MainFrame.Parent = gui
     Window.MainFrame = MainFrame
 
-    -- Atmosphere Red Smoke / Nebula Orbs
+    -- Aurora Mesh Orbs
     local BackdropLayer = create("Frame", {
         Name = "BackdropLayer",
         Size = UDim2.new(1, 0, 1, 0),
@@ -362,11 +360,11 @@ function Library:CreateWindow(config)
         ClipsDescendants = true,
         ZIndex = 1
     }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 18) })
+        create("UICorner", { CornerRadius = UDim.new(0, 20) })
     })
     BackdropLayer.Parent = MainFrame
 
-    local function createCrimsonNebulaOrb(name, color, size, pos, baseTrans)
+    local function createAuroraMeshOrb(name, color, size, pos, baseTrans)
         local orb = create("Frame", {
             Name = name,
             Size = size,
@@ -379,7 +377,7 @@ function Library:CreateWindow(config)
             create("UICorner", { CornerRadius = UDim.new(1, 0) }),
             create("UIGradient", {
                 Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, 0.35),
+                    NumberSequenceKeypoint.new(0, 0.4),
                     NumberSequenceKeypoint.new(0.5, 0.75),
                     NumberSequenceKeypoint.new(1, 1)
                 })
@@ -389,37 +387,41 @@ function Library:CreateWindow(config)
         return orb
     end
 
-    local OrbRed1 = createCrimsonNebulaOrb("OrbRed1", Library.Theme.RedPrimary, UDim2.new(0, 380, 0, 380), UDim2.new(0.12, 0, 0.2, 0), 0.58)
-    local OrbRed2 = createCrimsonNebulaOrb("OrbRed2", Library.Theme.RedDark, UDim2.new(0, 420, 0, 420), UDim2.new(0.88, 0, 0.8, 0), 0.60)
-    local OrbSteel = createCrimsonNebulaOrb("OrbSteel", Library.Theme.SteelDark, UDim2.new(0, 300, 0, 300), UDim2.new(0.5, 0, 0.5, 0), 0.70)
+    local OrbGold = createAuroraMeshOrb("OrbGold", Library.Theme.GoldPrimary, UDim2.new(0, 360, 0, 360), UDim2.new(0.15, 0, 0.25, 0), 0.58)
+    local OrbPetrol = createAuroraMeshOrb("OrbPetrol", Library.Theme.PetrolLight, UDim2.new(0, 420, 0, 420), UDim2.new(0.85, 0, 0.75, 0), 0.60)
+    local OrbAmber = createAuroraMeshOrb("OrbAmber", Library.Theme.GoldDark, UDim2.new(0, 300, 0, 300), UDim2.new(0.5, 0, 0.9, 0), 0.65)
 
     local GlassOverlay = create("Frame", {
         Name = "GlassOverlay",
         Size = UDim2.new(1, 0, 1, 0),
-        BackgroundColor3 = Library.Theme.Base,
+        BackgroundColor3 = Library.Theme.ObsidianBase,
         BackgroundTransparency = 0.45,
         ZIndex = 2
     }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 18) })
+        create("UICorner", { CornerRadius = UDim.new(0, 20) })
     })
     GlassOverlay.Parent = BackdropLayer
 
-    addNightStroke(MainFrame, 1.2, 0.25, true)
+    addDualToneStroke(MainFrame, 1.2, 0.3, true)
 
-    -- Sanfter Red-Smoke Drift
-    local smokeStep = 0
+    -- Aurora Motion
+    local auroraStep = 0
     RunService.RenderStepped:Connect(function(dt)
-        smokeStep = smokeStep + dt * 0.4
-        OrbRed1.Position = UDim2.new(
-            0.12 + math.sin(smokeStep * 0.7) * 0.08, 0,
-            0.20 + math.cos(smokeStep * 0.5) * 0.08, 0
+        auroraStep = auroraStep + dt * 0.4
+        OrbGold.Position = UDim2.new(
+            0.15 + math.sin(auroraStep * 0.7) * 0.1, 0,
+            0.25 + math.cos(auroraStep * 0.5) * 0.1, 0
         )
-        OrbRed2.Position = UDim2.new(
-            0.88 + math.cos(smokeStep * 0.6) * 0.08, 0,
-            0.80 + math.sin(smokeStep * 0.8) * 0.08, 0
+        OrbPetrol.Position = UDim2.new(
+            0.85 + math.cos(auroraStep * 0.6) * 0.1, 0,
+            0.75 + math.sin(auroraStep * 0.8) * 0.1, 0
+        )
+        OrbAmber.Position = UDim2.new(
+            0.50 + math.sin(auroraStep * 0.9) * 0.12, 0,
+            0.85 + math.cos(auroraStep * 0.7) * 0.08, 0
         )
         for _, grad in ipairs(animatedStrokes) do
-            grad.Rotation = (grad.Rotation + dt * 15) % 360
+            grad.Rotation = (grad.Rotation + dt * 18) % 360
         end
     end)
 
@@ -465,11 +467,11 @@ function Library:CreateWindow(config)
         Name = "TopNav",
         Size = UDim2.new(1, 0, 0, 54),
         Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(12, 13, 18),
-        BackgroundTransparency = 0.35,
+        BackgroundColor3 = Color3.fromRGB(14, 18, 26),
+        BackgroundTransparency = 0.4,
         ZIndex = 10
     }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 18) }),
+        create("UICorner", { CornerRadius = UDim.new(0, 20) }),
         create("UIPadding", {
             PaddingLeft = UDim.new(0, 16),
             PaddingRight = UDim.new(0, 16),
@@ -481,7 +483,7 @@ function Library:CreateWindow(config)
 
     local BrandSection = create("Frame", {
         Name = "BrandSection",
-        Size = UDim2.new(0, 240, 1, 0),
+        Size = UDim2.new(0, 220, 1, 0),
         BackgroundTransparency = 1,
         ZIndex = 11
     }, {
@@ -493,17 +495,16 @@ function Library:CreateWindow(config)
     })
     BrandSection.Parent = TopNav
 
-    -- Metallisches Night System "N" Logo Badge
     local LogoContainer = create("Frame", {
         Name = "LogoContainer",
         Size = UDim2.new(0, 34, 0, 34),
-        BackgroundColor3 = Library.Theme.Elevated,
-        BackgroundTransparency = 0.2,
+        BackgroundColor3 = Library.Theme.ObsidianElevated,
+        BackgroundTransparency = 0.25,
         ZIndex = 12
     }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 8) })
+        create("UICorner", { CornerRadius = UDim.new(0, 9) })
     })
-    addNightStroke(LogoContainer, 1.2, 0.2, true)
+    addDualToneStroke(LogoContainer, 1.2, 0.3, true)
     LogoContainer.Parent = BrandSection
 
     if CustomLogo then
@@ -522,9 +523,9 @@ function Library:CreateWindow(config)
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 1,
             Font = Enum.Font.GothamBlack,
-            Text = "N",
-            TextColor3 = Library.Theme.RedPrimary,
-            TextSize = 18,
+            Text = "SEPX",
+            TextColor3 = Library.Theme.GoldPrimary,
+            TextSize = 11,
             ZIndex = 13,
             Parent = LogoContainer
         })
@@ -532,7 +533,7 @@ function Library:CreateWindow(config)
 
     local BrandTextGroup = create("Frame", {
         Name = "BrandTextGroup",
-        Size = UDim2.new(0, 180, 1, 0),
+        Size = UDim2.new(0, 170, 1, 0),
         BackgroundTransparency = 1,
         ZIndex = 12
     }, {
@@ -553,7 +554,7 @@ function Library:CreateWindow(config)
             BackgroundTransparency = 1,
             Font = Library.Theme.FontRegular,
             Text = SubTitle,
-            TextColor3 = Library.Theme.RedPrimary,
+            TextColor3 = Library.Theme.GoldPrimary,
             TextSize = 9.5,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 13
@@ -581,7 +582,7 @@ function Library:CreateWindow(config)
         local pill = create("Frame", {
             Name = "Pill_" .. labelText,
             Size = UDim2.new(0, 72, 0, 26),
-            BackgroundColor3 = Library.Theme.Elevated,
+            BackgroundColor3 = Library.Theme.ObsidianElevated,
             BackgroundTransparency = 0.45,
             ZIndex = 12
         }, {
@@ -592,7 +593,7 @@ function Library:CreateWindow(config)
                 Position = UDim2.new(0, 0, 0.5, -5.5),
                 BackgroundTransparency = 1,
                 Image = icon,
-                ImageColor3 = Library.Theme.RedPrimary,
+                ImageColor3 = Library.Theme.GoldPrimary,
                 ZIndex = 13
             }),
             create("TextLabel", {
@@ -608,7 +609,7 @@ function Library:CreateWindow(config)
                 ZIndex = 13
             })
         })
-        addNightStroke(pill, 1, 0.6, false)
+        addDualToneStroke(pill, 1, 0.5, false)
         return pill
     end
 
@@ -621,7 +622,7 @@ function Library:CreateWindow(config)
         local btn = create("TextButton", {
             Name = name,
             Size = UDim2.new(0, 26, 0, 26),
-            BackgroundColor3 = Library.Theme.Elevated,
+            BackgroundColor3 = Library.Theme.ObsidianElevated,
             BackgroundTransparency = 0.45,
             Text = "",
             AutoButtonColor = false,
@@ -638,18 +639,19 @@ function Library:CreateWindow(config)
                 ZIndex = 13
             })
         })
-        addNightStroke(btn, 1, 0.6, false)
+        addDualToneStroke(btn, 1, 0.5, false)
 
         btn.MouseEnter:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.RedPrimary, BackgroundTransparency = 0.2 }):Play()
+            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.PetrolLight, BackgroundTransparency = 0.2 }):Play()
         end)
         btn.MouseLeave:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.Elevated, BackgroundTransparency = 0.45 }):Play()
+            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.ObsidianElevated, BackgroundTransparency = 0.45 }):Play()
         end)
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
 
+    -- Container unter TopNav
     local BodyContainer = create("Frame", {
         Name = "BodyContainer",
         Size = UDim2.new(1, 0, 1, -54),
@@ -689,15 +691,15 @@ function Library:CreateWindow(config)
     end)
     CloseBtn.Parent = RightNav
 
-    -- Sidebar (Tabs)
+    -- Sidebar (Tab Buttons)
     local TabSidebar = create("ScrollingFrame", {
         Name = "TabSidebar",
         Size = UDim2.new(0, 185, 1, -16),
         Position = UDim2.new(0, 12, 0, 8),
-        BackgroundColor3 = Library.Theme.Sidebar,
+        BackgroundColor3 = Library.Theme.ObsidianSidebar,
         BackgroundTransparency = 0.45,
         ScrollBarThickness = 2,
-        ScrollBarImageColor3 = Library.Theme.RedPrimary,
+        ScrollBarImageColor3 = Library.Theme.GoldPrimary,
         CanvasSize = UDim2.new(0, 0, 0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ZIndex = 6
@@ -714,10 +716,10 @@ function Library:CreateWindow(config)
             Padding = UDim.new(0, 6)
         })
     })
-    addNightStroke(TabSidebar, 1, 0.6, false)
+    addDualToneStroke(TabSidebar, 1, 0.5, false)
     TabSidebar.Parent = BodyContainer
 
-    -- Page Container
+    -- Page Container (Tab Contents)
     local ContentContainer = create("Frame", {
         Name = "ContentContainer",
         Size = UDim2.new(1, -217, 1, -16),
@@ -729,7 +731,7 @@ function Library:CreateWindow(config)
     ContentContainer.Parent = BodyContainer
 
     -- ================================================================
-    -- TAB SYSTEM (Window:MakeTab)
+    -- TAB ERSTELLUNG: Window:MakeTab({Name = "Visuals", Icon = "...", PremiumOnly = false})
     -- ================================================================
     function Window:MakeTab(tabConfig)
         tabConfig = tabConfig or {}
@@ -741,13 +743,14 @@ function Library:CreateWindow(config)
             Elements = {}
         }
 
+        -- Scrollbare Seite für Tab-Inhalte
         local TabPage = create("ScrollingFrame", {
             Name = "Page_" .. tabName,
             Size = UDim2.new(1, 0, 1, 0),
             Position = UDim2.new(0, 0, 0, 0),
             BackgroundTransparency = 1,
             ScrollBarThickness = 3,
-            ScrollBarImageColor3 = Library.Theme.RedPrimary,
+            ScrollBarImageColor3 = Library.Theme.GoldPrimary,
             CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             Visible = false,
@@ -767,11 +770,12 @@ function Library:CreateWindow(config)
         TabPage.Parent = ContentContainer
         Tab.Page = TabPage
 
+        -- Tab Sidebar Button
         local TabBtn = create("TextButton", {
             Name = "TabBtn_" .. tabName,
             Size = UDim2.new(1, 0, 0, 36),
-            BackgroundColor3 = Library.Theme.Elevated,
-            BackgroundTransparency = 0.75,
+            BackgroundColor3 = Library.Theme.ObsidianElevated,
+            BackgroundTransparency = 0.7,
             AutoButtonColor = false,
             Text = "",
             ZIndex = 7
@@ -801,7 +805,7 @@ function Library:CreateWindow(config)
                 ZIndex = 8
             })
         })
-        addNightStroke(TabBtn, 1, 0.8, false)
+        addDualToneStroke(TabBtn, 1, 0.8, false)
         TabBtn.Parent = TabSidebar
         Tab.Button = TabBtn
 
@@ -809,8 +813,8 @@ function Library:CreateWindow(config)
             for _, otherTab in pairs(Window.Tabs) do
                 otherTab.Page.Visible = false
                 TweenService:Create(otherTab.Button, TweenInfo.new(0.2), {
-                    BackgroundColor3 = Library.Theme.Elevated,
-                    BackgroundTransparency = 0.75
+                    BackgroundColor3 = Library.Theme.ObsidianElevated,
+                    BackgroundTransparency = 0.7
                 }):Play()
                 local lbl = otherTab.Button:FindFirstChild("TabLabel")
                 local ico = otherTab.Button:FindFirstChild("TabIcon")
@@ -821,13 +825,13 @@ function Library:CreateWindow(config)
             TabPage.Visible = true
             Window.ActiveTab = Tab
             TweenService:Create(TabBtn, TweenInfo.new(0.2), {
-                BackgroundColor3 = Library.Theme.Elevated,
+                BackgroundColor3 = Library.Theme.ObsidianElevated,
                 BackgroundTransparency = 0.15
             }):Play()
             local lbl = TabBtn:FindFirstChild("TabLabel")
             local ico = TabBtn:FindFirstChild("TabIcon")
-            if lbl then lbl.TextColor3 = Library.Theme.SteelLight end
-            if ico then ico.ImageColor3 = Library.Theme.RedPrimary end
+            if lbl then lbl.TextColor3 = Library.Theme.GoldLight end
+            if ico then ico.ImageColor3 = Library.Theme.GoldPrimary end
         end
 
         TabBtn.MouseButton1Click:Connect(activateTab)
@@ -836,6 +840,10 @@ function Library:CreateWindow(config)
         if #Window.Tabs == 1 then
             activateTab()
         end
+
+        -- ============================================================
+        -- TAB ELEMENTE (Orion-Style API)
+        -- ============================================================
 
         -- 1. SECTION
         function Tab:AddSection(secConfig)
@@ -851,7 +859,7 @@ function Library:CreateWindow(config)
                     BackgroundTransparency = 1,
                     Font = Library.Theme.FontBold,
                     Text = string.upper(title),
-                    TextColor3 = Library.Theme.RedPrimary,
+                    TextColor3 = Library.Theme.GoldPrimary,
                     TextSize = 10.5,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     ZIndex = 9
@@ -870,7 +878,7 @@ function Library:CreateWindow(config)
             local btnCard = create("TextButton", {
                 Name = "BtnCard_" .. btnName,
                 Size = UDim2.new(1, 0, 0, 38),
-                BackgroundColor3 = Library.Theme.Card,
+                BackgroundColor3 = Library.Theme.ObsidianCard,
                 BackgroundTransparency = 0.35,
                 AutoButtonColor = false,
                 Text = "",
@@ -894,18 +902,18 @@ function Library:CreateWindow(config)
                     Position = UDim2.new(1, 0, 0.5, 0),
                     BackgroundTransparency = 1,
                     Image = Library.Icons.Sparkle,
-                    ImageColor3 = Library.Theme.RedPrimary,
+                    ImageColor3 = Library.Theme.GoldPrimary,
                     ZIndex = 9
                 })
             })
-            addNightStroke(btnCard, 1, 0.55, false)
+            addDualToneStroke(btnCard, 1, 0.5, false)
             btnCard.Parent = TabPage
 
             btnCard.MouseEnter:Connect(function()
-                TweenService:Create(btnCard, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.Elevated, BackgroundTransparency = 0.15 }):Play()
+                TweenService:Create(btnCard, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.ObsidianElevated, BackgroundTransparency = 0.15 }):Play()
             end)
             btnCard.MouseLeave:Connect(function()
-                TweenService:Create(btnCard, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.Card, BackgroundTransparency = 0.35 }):Play()
+                TweenService:Create(btnCard, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.ObsidianCard, BackgroundTransparency = 0.35 }):Play()
             end)
             btnCard.MouseButton1Click:Connect(function()
                 callback()
@@ -929,7 +937,7 @@ function Library:CreateWindow(config)
             local togCard = create("TextButton", {
                 Name = "TogCard_" .. togName,
                 Size = UDim2.new(1, 0, 0, 38),
-                BackgroundColor3 = Library.Theme.Card,
+                BackgroundColor3 = Library.Theme.ObsidianCard,
                 BackgroundTransparency = 0.35,
                 AutoButtonColor = false,
                 Text = "",
@@ -948,7 +956,7 @@ function Library:CreateWindow(config)
                     ZIndex = 9
                 })
             })
-            addNightStroke(togCard, 1, 0.55, false)
+            addDualToneStroke(togCard, 1, 0.5, false)
             togCard.Parent = TabPage
 
             local switchBg = create("Frame", {
@@ -956,7 +964,7 @@ function Library:CreateWindow(config)
                 Size = UDim2.new(0, 40, 0, 20),
                 AnchorPoint = Vector2.new(1, 0.5),
                 Position = UDim2.new(1, 0, 0.5, 0),
-                BackgroundColor3 = state and Library.Theme.RedPrimary or Color3.fromRGB(28, 30, 40),
+                BackgroundColor3 = state and Library.Theme.GoldPrimary or Color3.fromRGB(28, 36, 48),
                 ZIndex = 9
             }, {
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
@@ -968,7 +976,7 @@ function Library:CreateWindow(config)
                 Size = UDim2.new(0, 16, 0, 16),
                 AnchorPoint = Vector2.new(0, 0.5),
                 Position = state and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
-                BackgroundColor3 = state and Library.Theme.TextWhite or Color3.fromRGB(180, 185, 200),
+                BackgroundColor3 = state and Library.Theme.TextDarkButton or Color3.fromRGB(200, 210, 225),
                 ZIndex = 10
             }, {
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
@@ -978,11 +986,11 @@ function Library:CreateWindow(config)
             local function updateToggle(newState)
                 state = newState
                 TweenService:Create(switchBg, TweenInfo.new(0.2), {
-                    BackgroundColor3 = state and Library.Theme.RedPrimary or Color3.fromRGB(28, 30, 40)
+                    BackgroundColor3 = state and Library.Theme.GoldPrimary or Color3.fromRGB(28, 36, 48)
                 }):Play()
                 TweenService:Create(switchKnob, TweenInfo.new(0.2), {
                     Position = state and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
-                    BackgroundColor3 = state and Library.Theme.TextWhite or Color3.fromRGB(180, 185, 200)
+                    BackgroundColor3 = state and Library.Theme.TextDarkButton or Color3.fromRGB(200, 210, 225)
                 }):Play()
                 pcall(callback, state)
             end
@@ -1015,7 +1023,7 @@ function Library:CreateWindow(config)
             local sldCard = create("Frame", {
                 Name = "SldCard_" .. sldName,
                 Size = UDim2.new(1, 0, 0, 52),
-                BackgroundColor3 = Library.Theme.Card,
+                BackgroundColor3 = Library.Theme.ObsidianCard,
                 BackgroundTransparency = 0.35,
                 ZIndex = 8
             }, {
@@ -1032,7 +1040,7 @@ function Library:CreateWindow(config)
                     ZIndex = 9
                 })
             })
-            addNightStroke(sldCard, 1, 0.55, false)
+            addDualToneStroke(sldCard, 1, 0.5, false)
             sldCard.Parent = TabPage
 
             local valLabel = create("TextLabel", {
@@ -1041,7 +1049,7 @@ function Library:CreateWindow(config)
                 BackgroundTransparency = 1,
                 Font = Library.Theme.FontBold,
                 Text = tostring(currentVal) .. valueName,
-                TextColor3 = Library.Theme.RedPrimary,
+                TextColor3 = Library.Theme.GoldPrimary,
                 TextSize = 11,
                 TextXAlignment = Enum.TextXAlignment.Right,
                 ZIndex = 9
@@ -1052,7 +1060,7 @@ function Library:CreateWindow(config)
                 Name = "Track",
                 Size = UDim2.new(1, 0, 0, 6),
                 Position = UDim2.new(0, 0, 1, -8),
-                BackgroundColor3 = Color3.fromRGB(24, 26, 36),
+                BackgroundColor3 = Color3.fromRGB(24, 32, 46),
                 ZIndex = 9
             }, {
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
@@ -1062,14 +1070,14 @@ function Library:CreateWindow(config)
             local fillBar = create("Frame", {
                 Name = "Fill",
                 Size = UDim2.new((currentVal - min) / (max - min), 0, 1, 0),
-                BackgroundColor3 = Library.Theme.RedPrimary,
+                BackgroundColor3 = Library.Theme.GoldPrimary,
                 ZIndex = 10
             }, {
                 create("UICorner", { CornerRadius = UDim.new(1, 0) }),
                 create("UIGradient", {
                     Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Library.Theme.RedLight),
-                        ColorSequenceKeypoint.new(1, Library.Theme.RedDark)
+                        ColorSequenceKeypoint.new(0, Library.Theme.GoldLight),
+                        ColorSequenceKeypoint.new(1, Library.Theme.GoldPrimary)
                     })
                 })
             })
@@ -1136,14 +1144,14 @@ function Library:CreateWindow(config)
             local ddCard = create("Frame", {
                 Name = "DDCard_" .. ddName,
                 Size = UDim2.new(1, 0, 0, 38),
-                BackgroundColor3 = Library.Theme.Card,
+                BackgroundColor3 = Library.Theme.ObsidianCard,
                 BackgroundTransparency = 0.35,
                 ClipsDescendants = true,
                 ZIndex = 8
             }, {
                 create("UICorner", { CornerRadius = UDim.new(0, 10) })
             })
-            addNightStroke(ddCard, 1, 0.55, false)
+            addDualToneStroke(ddCard, 1, 0.5, false)
             ddCard.Parent = TabPage
 
             local headerBtn = create("TextButton", {
@@ -1171,7 +1179,7 @@ function Library:CreateWindow(config)
                     BackgroundTransparency = 1,
                     Font = Library.Theme.FontBold,
                     Text = tostring(currentOption),
-                    TextColor3 = Library.Theme.RedPrimary,
+                    TextColor3 = Library.Theme.GoldPrimary,
                     TextSize = 11,
                     TextTruncate = Enum.TextTruncate.AtEnd,
                     TextXAlignment = Enum.TextXAlignment.Right,
@@ -1213,7 +1221,7 @@ function Library:CreateWindow(config)
                     local optBtn = create("TextButton", {
                         Name = "Opt_" .. tostring(opt),
                         Size = UDim2.new(1, 0, 0, 28),
-                        BackgroundColor3 = (opt == currentOption) and Library.Theme.RedDark or Library.Theme.Input,
+                        BackgroundColor3 = (opt == currentOption) and Library.Theme.PetrolDark or Library.Theme.InputDark,
                         BackgroundTransparency = 0.3,
                         AutoButtonColor = false,
                         Text = "",
@@ -1227,7 +1235,7 @@ function Library:CreateWindow(config)
                             BackgroundTransparency = 1,
                             Font = (opt == currentOption) and Library.Theme.FontBold or Library.Theme.FontRegular,
                             Text = tostring(opt),
-                            TextColor3 = (opt == currentOption) and Library.Theme.TextWhite or Library.Theme.TextBody,
+                            TextColor3 = (opt == currentOption) and Library.Theme.GoldLight or Library.Theme.TextBody,
                             TextSize = 10.5,
                             TextXAlignment = Enum.TextXAlignment.Left,
                             ZIndex = 11
@@ -1297,7 +1305,7 @@ function Library:CreateWindow(config)
             local tbCard = create("Frame", {
                 Name = "TBCard_" .. tbName,
                 Size = UDim2.new(1, 0, 0, 42),
-                BackgroundColor3 = Library.Theme.Card,
+                BackgroundColor3 = Library.Theme.ObsidianCard,
                 BackgroundTransparency = 0.35,
                 ZIndex = 8
             }, {
@@ -1314,14 +1322,14 @@ function Library:CreateWindow(config)
                     ZIndex = 9
                 })
             })
-            addNightStroke(tbCard, 1, 0.55, false)
+            addDualToneStroke(tbCard, 1, 0.5, false)
             tbCard.Parent = TabPage
 
             local boxContainer = create("Frame", {
                 Size = UDim2.new(0.55, 0, 0, 28),
                 AnchorPoint = Vector2.new(1, 0.5),
                 Position = UDim2.new(1, 0, 0.5, 0),
-                BackgroundColor3 = Library.Theme.Input,
+                BackgroundColor3 = Library.Theme.InputDark,
                 BackgroundTransparency = 0.3,
                 ZIndex = 9
             }, {
@@ -1337,7 +1345,7 @@ function Library:CreateWindow(config)
                 PlaceholderText = placeholder,
                 PlaceholderColor3 = Library.Theme.TextMuted,
                 Text = default,
-                TextColor3 = Library.Theme.SteelLight,
+                TextColor3 = Library.Theme.GoldLight,
                 TextSize = 10.5,
                 TextXAlignment = Enum.TextXAlignment.Left,
                 ClearTextOnFocus = clearOnFocus,
@@ -1371,7 +1379,7 @@ function Library:CreateWindow(config)
             local bindCard = create("Frame", {
                 Name = "BindCard_" .. bindName,
                 Size = UDim2.new(1, 0, 0, 38),
-                BackgroundColor3 = Library.Theme.Card,
+                BackgroundColor3 = Library.Theme.ObsidianCard,
                 BackgroundTransparency = 0.35,
                 ZIndex = 8
             }, {
@@ -1388,18 +1396,18 @@ function Library:CreateWindow(config)
                     ZIndex = 9
                 })
             })
-            addNightStroke(bindCard, 1, 0.55, false)
+            addDualToneStroke(bindCard, 1, 0.5, false)
             bindCard.Parent = TabPage
 
             local bindBtn = create("TextButton", {
                 Size = UDim2.new(0, 68, 0, 24),
                 AnchorPoint = Vector2.new(1, 0.5),
                 Position = UDim2.new(1, 0, 0.5, 0),
-                BackgroundColor3 = Library.Theme.Input,
+                BackgroundColor3 = Library.Theme.InputDark,
                 BackgroundTransparency = 0.3,
                 Font = Library.Theme.FontBold,
                 Text = currentKey.Name,
-                TextColor3 = Library.Theme.RedPrimary,
+                TextColor3 = Library.Theme.GoldPrimary,
                 TextSize = 10,
                 AutoButtonColor = false,
                 ZIndex = 9
@@ -1419,7 +1427,7 @@ function Library:CreateWindow(config)
                     if input.UserInputType == Enum.UserInputType.Keyboard then
                         currentKey = input.KeyCode
                         bindBtn.Text = currentKey.Name
-                        bindBtn.TextColor3 = Library.Theme.RedPrimary
+                        bindBtn.TextColor3 = Library.Theme.GoldPrimary
                         isListening = false
                     end
                 elseif not gpe and input.KeyCode == currentKey then
@@ -1445,7 +1453,7 @@ function Library:CreateWindow(config)
             local pCard = create("Frame", {
                 Name = "PCard_" .. pTitle,
                 Size = UDim2.new(1, 0, 0, 54),
-                BackgroundColor3 = Library.Theme.Card,
+                BackgroundColor3 = Library.Theme.ObsidianCard,
                 BackgroundTransparency = 0.45,
                 ZIndex = 8
             }, {
@@ -1457,7 +1465,7 @@ function Library:CreateWindow(config)
                     BackgroundTransparency = 1,
                     Font = Library.Theme.FontBold,
                     Text = pTitle,
-                    TextColor3 = Library.Theme.RedPrimary,
+                    TextColor3 = Library.Theme.GoldPrimary,
                     TextSize = 11.5,
                     TextXAlignment = Enum.TextXAlignment.Left,
                     ZIndex = 9
@@ -1476,7 +1484,7 @@ function Library:CreateWindow(config)
                     ZIndex = 9
                 })
             })
-            addNightStroke(pCard, 1, 0.6, false)
+            addDualToneStroke(pCard, 1, 0.6, false)
             pCard.Parent = TabPage
 
             return {
@@ -1492,7 +1500,7 @@ function Library:CreateWindow(config)
             local lblCard = create("Frame", {
                 Name = "LabelCard",
                 Size = UDim2.new(1, 0, 0, 28),
-                BackgroundColor3 = Library.Theme.Input,
+                BackgroundColor3 = Library.Theme.InputDark,
                 BackgroundTransparency = 0.5,
                 ZIndex = 8
             }, {
@@ -1523,8 +1531,7 @@ function Library:CreateWindow(config)
     end
 
     -- ================================================================
-    -- 🎬 4-SEKUNDEN NIGHT SYSTEM CINEMATIC LOADER
-    -- (Crimson Red Inward Screen Glow & Metallic "N" Logo Backlight)
+    -- 4-SEKUNDEN INTRO LAUNCH SEQUENCE
     -- ================================================================
     if EnableIntro then
         task.spawn(function()
@@ -1538,8 +1545,10 @@ function Library:CreateWindow(config)
             })
             IntroOverlay.Parent = gui
 
-            local GlowCrimson1 = Color3.fromRGB(255, 35, 55)
-            local GlowCrimson2 = Color3.fromRGB(170, 15, 30)
+            local GlowGold1 = Color3.fromRGB(255, 225, 130)
+            local GlowGold2 = Color3.fromRGB(220, 160, 60)
+            local GlowPetrol1 = Color3.fromRGB(0, 235, 255)
+            local GlowPetrol2 = Color3.fromRGB(25, 110, 150)
 
             local function createInwardGlow(name, size, pos, color1, color2, rot)
                 local glow = create("Frame", {
@@ -1570,16 +1579,15 @@ function Library:CreateWindow(config)
                 return glow
             end
 
-            -- 4 Crimson Inward Glows (alle 4 Seiten)
-            local TopInwardGlow    = createInwardGlow("TopInwardGlow",    UDim2.new(1, 0, 0, 220), UDim2.new(0, 0, 0, 0),      GlowCrimson1, GlowCrimson2, 90)
-            local RightInwardGlow  = createInwardGlow("RightInwardGlow",  UDim2.new(0, 220, 1, 0), UDim2.new(1, -220, 0, 0),   GlowCrimson1, GlowCrimson2, 180)
-            local BottomInwardGlow = createInwardGlow("BottomInwardGlow", UDim2.new(1, 0, 0, 220), UDim2.new(0, 0, 1, -220),   GlowCrimson1, GlowCrimson2, 270)
-            local LeftInwardGlow   = createInwardGlow("LeftInwardGlow",   UDim2.new(0, 220, 1, 0), UDim2.new(0, 0, 0, 0),      GlowCrimson1, GlowCrimson2, 0)
+            local TopInwardGlow = createInwardGlow("TopInwardGlow", UDim2.new(1, 0, 0, 220), UDim2.new(0, 0, 0, 0), GlowGold1, GlowGold2, 90)
+            local RightInwardGlow = createInwardGlow("RightInwardGlow", UDim2.new(0, 220, 1, 0), UDim2.new(1, -220, 0, 0), GlowPetrol1, GlowPetrol2, 180)
+            local BottomInwardGlow = createInwardGlow("BottomInwardGlow", UDim2.new(1, 0, 0, 220), UDim2.new(0, 0, 1, -220), GlowGold1, GlowGold2, 270)
+            local LeftInwardGlow = createInwardGlow("LeftInwardGlow", UDim2.new(0, 220, 1, 0), UDim2.new(0, 0, 0, 0), GlowPetrol1, GlowPetrol2, 0)
 
-            TweenService:Create(TopInwardGlow,    TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
-            TweenService:Create(RightInwardGlow,  TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
+            TweenService:Create(TopInwardGlow, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
+            TweenService:Create(RightInwardGlow, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
             TweenService:Create(BottomInwardGlow, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
-            TweenService:Create(LeftInwardGlow,   TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
+            TweenService:Create(LeftInwardGlow, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
 
             local breathStep = 0
             local breathingConn
@@ -1587,32 +1595,11 @@ function Library:CreateWindow(config)
                 breathStep = breathStep + dt * 2.2
                 local breathFactor = (math.sin(breathStep) + 1) * 0.5
                 local inwardTrans = 0.0 + (1 - breathFactor) * 0.35
-                TopInwardGlow.BackgroundTransparency    = inwardTrans
-                RightInwardGlow.BackgroundTransparency  = inwardTrans
+                TopInwardGlow.BackgroundTransparency = inwardTrans
+                RightInwardGlow.BackgroundTransparency = inwardTrans
                 BottomInwardGlow.BackgroundTransparency = inwardTrans
-                LeftInwardGlow.BackgroundTransparency   = inwardTrans
+                LeftInwardGlow.BackgroundTransparency = inwardTrans
             end)
-
-            -- Metallic "N" Emblem mit Crimson Backlight
-            local LogoBackglow = create("Frame", {
-                Name = "LogoBackglow",
-                Size = UDim2.new(0, 220, 0, 220),
-                AnchorPoint = Vector2.new(0.5, 0.5),
-                Position = UDim2.new(0.5, 0, 0.44, 0),
-                BackgroundColor3 = GlowCrimson1,
-                BackgroundTransparency = 0.7,
-                ZIndex = 205
-            }, {
-                create("UICorner", { CornerRadius = UDim.new(1, 0) }),
-                create("UIGradient", {
-                    Transparency = NumberSequence.new({
-                        NumberSequenceKeypoint.new(0, 0.2),
-                        NumberSequenceKeypoint.new(0.6, 0.7),
-                        NumberSequenceKeypoint.new(1, 1)
-                    })
-                })
-            })
-            LogoBackglow.Parent = IntroOverlay
 
             local GiantLogo = create("ImageLabel", {
                 Name = "GiantLogo",
@@ -1633,9 +1620,9 @@ function Library:CreateWindow(config)
                     Size = UDim2.new(1, 0, 1, 0),
                     BackgroundTransparency = 1,
                     Font = Enum.Font.GothamBlack,
-                    Text = "N",
-                    TextColor3 = Library.Theme.SteelLight,
-                    TextSize = 140,
+                    Text = "SEPX",
+                    TextColor3 = GlowGold1,
+                    TextSize = 100,
                     TextTransparency = 1,
                     ZIndex = 208
                 })
@@ -1643,7 +1630,7 @@ function Library:CreateWindow(config)
             end
 
             local IntroTitle = create("TextLabel", {
-                Size = UDim2.new(0, 480, 0, 36),
+                Size = UDim2.new(0, 460, 0, 36),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Position = UDim2.new(0.5, 0, 0.70, 0),
                 BackgroundTransparency = 1,
@@ -1656,13 +1643,12 @@ function Library:CreateWindow(config)
             })
             IntroTitle.Parent = IntroOverlay
 
-            -- Crimson Ladebalken
             local ProgressTrack = create("Frame", {
                 Name = "ProgressTrack",
                 Size = UDim2.new(0, 260, 0, 5),
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Position = UDim2.new(0.5, 0, 0.76, 0),
-                BackgroundColor3 = Color3.fromRGB(20, 22, 30),
+                BackgroundColor3 = Color3.fromRGB(20, 28, 40),
                 BackgroundTransparency = 0.4,
                 ZIndex = 210
             }, {
@@ -1673,27 +1659,22 @@ function Library:CreateWindow(config)
             local ProgressBar = create("Frame", {
                 Name = "ProgressBar",
                 Size = UDim2.new(0, 0, 1, 0),
-                BackgroundColor3 = Library.Theme.RedPrimary,
+                BackgroundColor3 = Library.Theme.GoldPrimary,
                 ZIndex = 211
             }, {
-                create("UICorner", { CornerRadius = UDim.new(1, 0) }),
-                create("UIGradient", {
-                    Color = ColorSequence.new({
-                        ColorSequenceKeypoint.new(0, Library.Theme.RedLight),
-                        ColorSequenceKeypoint.new(1, Library.Theme.RedDark)
-                    })
-                })
+                create("UICorner", { CornerRadius = UDim.new(1, 0) })
             })
             ProgressBar.Parent = ProgressTrack
 
             task.wait(0.15)
             TweenService:Create(GiantLogo, TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 300, 0, 300),
-                ImageTransparency = 0.1
+                ImageTransparency = 0.2
             }):Play()
             if GiantFallbackText then
-                TweenService:Create(GiantFallbackText, TweenInfo.new(0.8), { TextTransparency = 0.1 }):Play()
+                TweenService:Create(GiantFallbackText, TweenInfo.new(0.8), { TextTransparency = 0.2 }):Play()
             end
+
             TweenService:Create(IntroTitle, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { TextTransparency = 0 }):Play()
 
             local loadTime = math.max(1, IntroDuration - 0.5)
@@ -1709,20 +1690,19 @@ function Library:CreateWindow(config)
 
             TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 840, 0, 540),
-                BackgroundTransparency = 0.08
+                BackgroundTransparency = 0.1
             }):Play()
 
             TweenService:Create(GiantLogo, TweenInfo.new(0.4), { ImageTransparency = 1, Size = UDim2.new(0, 340, 0, 340) }):Play()
-            TweenService:Create(LogoBackglow, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
             if GiantFallbackText then TweenService:Create(GiantFallbackText, TweenInfo.new(0.4), { TextTransparency = 1 }):Play() end
             TweenService:Create(IntroTitle, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
             TweenService:Create(ProgressTrack, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
             TweenService:Create(ProgressBar, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
 
-            TweenService:Create(TopInwardGlow,    TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(TopInwardGlow, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
             TweenService:Create(BottomInwardGlow, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
-            TweenService:Create(LeftInwardGlow,   TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
-            TweenService:Create(RightInwardGlow,  TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(LeftInwardGlow, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
+            TweenService:Create(RightInwardGlow, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
 
             task.wait(0.55)
             if breathingConn then breathingConn:Disconnect() end
@@ -1730,7 +1710,7 @@ function Library:CreateWindow(config)
 
             Library:Notify({
                 Title = Title,
-                Content = "Night System Initialized. Welcome, " .. (LocalPlayer.DisplayName or "User"),
+                Content = "Universal Hub Initialized. Welcome, " .. (LocalPlayer.DisplayName or "User"),
                 Duration = 3.5
             })
         end)
