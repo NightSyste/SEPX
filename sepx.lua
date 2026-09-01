@@ -1,6 +1,5 @@
 local Library = {}
 Library.__index = Library
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -9,9 +8,7 @@ local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
 local GuiService = game:GetService("GuiService")
 local MarketplaceService = game:GetService("MarketplaceService")
-
 local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
-
 -- Universal Safe GUI Container
 local ParentContainer = nil
 if gethui then
@@ -26,7 +23,6 @@ elseif CoreGui and pcall(function() return CoreGui.Name end) then
 else
     ParentContainer = LocalPlayer:WaitForChild("PlayerGui")
 end
-
 -- Farbschema (Obsidian Cyber)
 Library.Theme = {
     ObsidianBase = Color3.fromRGB(11, 14, 20),
@@ -57,7 +53,6 @@ Library.Theme = {
     FontMedium = Enum.Font.GothamMedium,
     FontRegular = Enum.Font.Gotham
 }
-
 Library.Icons = {
     Key = "rbxassetid://10709791437",
     Shield = "rbxassetid://10734919339",
@@ -79,7 +74,6 @@ Library.Icons = {
     Code = "rbxassetid://10734950384",
     ChevronDown = "rbxassetid://10709790948"
 }
-
 -- Sichere Instanzerstellung
 local function create(className, properties, children)
     local inst = Instance.new(className)
@@ -91,9 +85,7 @@ local function create(className, properties, children)
     end
     return inst
 end
-
 local animatedStrokes = {}
-
 local function addDualToneStroke(inst, thickness, trans, enableRotation)
     local stroke = create("UIStroke", {
         Color = Library.Theme.GoldPrimary,
@@ -113,13 +105,11 @@ local function addDualToneStroke(inst, thickness, trans, enableRotation)
     })
     gradient.Parent = stroke
     stroke.Parent = inst
-
     if enableRotation then
         table.insert(animatedStrokes, gradient)
     end
     return stroke, gradient
 end
-
 function Library:SetClipboard(text)
     if setclipboard then
         setclipboard(text)
@@ -133,7 +123,6 @@ function Library:SetClipboard(text)
     end
     return false
 end
-
 function Library:GetDeviceType()
     if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
         return "Handy (Mobile)"
@@ -143,7 +132,6 @@ function Library:GetDeviceType()
         return "PC"
     end
 end
-
 function Library:GetExecutor()
     if identifyexecutor then
         local success, name, ver = pcall(identifyexecutor)
@@ -177,7 +165,6 @@ function Library:GetExecutor()
         return "Universal / Studio"
     end
 end
-
 function Library:GetHWID()
     if gethwid then
         local raw = gethwid()
@@ -186,18 +173,15 @@ function Library:GetHWID()
     local id = tostring(LocalPlayer.UserId * 1337)
     return "SEPX-" .. string.sub(id, 1, 8)
 end
-
 -- Root GUI Container & Toast
 local ScreenGui = nil
 local ToastContainer = nil
-
 local function ensureGui()
     if ScreenGui and ScreenGui.Parent then return ScreenGui end
     
     if ParentContainer:FindFirstChild("SEPX_Enterprise_Hub") then
         ParentContainer:FindFirstChild("SEPX_Enterprise_Hub"):Destroy()
     end
-
     ScreenGui = create("ScreenGui", {
         Name = "SEPX_Enterprise_Hub",
         ResetOnSpawn = false,
@@ -209,7 +193,6 @@ local function ensureGui()
         ScreenGui.ScreenInsets = Enum.ScreenInsets.None
     end)
     ScreenGui.Parent = ParentContainer
-
     ToastContainer = create("Frame", {
         Name = "ToastContainer",
         Size = UDim2.new(0, 310, 1, -40),
@@ -227,7 +210,6 @@ local function ensureGui()
     ToastContainer.Parent = ScreenGui
     return ScreenGui
 end
-
 -- Universeller Notifier (Unterstützt Orion-Style Table ODER 3 Parameter)
 function Library:Notify(titleOrConfig, message, isSuccess)
     ensureGui()
@@ -236,7 +218,6 @@ function Library:Notify(titleOrConfig, message, isSuccess)
     local success = true
     local duration = 3.2
     local customIcon = nil
-
     if type(titleOrConfig) == "table" then
         title = titleOrConfig.Title or titleOrConfig.Name or "Notification"
         desc = titleOrConfig.Content or titleOrConfig.Description or titleOrConfig.Text or ""
@@ -248,7 +229,6 @@ function Library:Notify(titleOrConfig, message, isSuccess)
         desc = tostring(message or "")
         success = (isSuccess ~= false)
     end
-
     local toast = create("Frame", {
         Name = "Toast",
         Size = UDim2.new(1, 0, 0, 58),
@@ -298,11 +278,9 @@ function Library:Notify(titleOrConfig, message, isSuccess)
     })
     addDualToneStroke(toast, 1.1, 0.3, false)
     toast.Parent = ToastContainer
-
     TweenService:Create(toast, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
-
     task.delay(duration, function()
         if toast and toast.Parent then
             local tw = TweenService:Create(toast, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -315,7 +293,6 @@ function Library:Notify(titleOrConfig, message, isSuccess)
         end
     end)
 end
-
 -- ====================================================================
 -- WINDOW ERSTELLUNG (Window:MakeTab, AddToggle, AddSlider, AddButton etc.)
 -- ====================================================================
@@ -327,15 +304,12 @@ function Library:CreateWindow(config)
     local IntroDuration = config.IntroDuration or 4
     local EnableIntro = (config.EnableIntro ~= false)
     local CustomLogo = config.Logo or config.Icon or nil
-
     local gui = ensureGui()
-
     local Window = {
         Tabs = {},
         ActiveTab = nil,
         _isMinimized = false
     }
-
     -- Hauptfenster Frame
     local MainFrame = create("Frame", {
         Name = "MainFrame",
@@ -351,7 +325,6 @@ function Library:CreateWindow(config)
     })
     MainFrame.Parent = gui
     Window.MainFrame = MainFrame
-
     -- Aurora Mesh Orbs
     local BackdropLayer = create("Frame", {
         Name = "BackdropLayer",
@@ -363,7 +336,6 @@ function Library:CreateWindow(config)
         create("UICorner", { CornerRadius = UDim.new(0, 20) })
     })
     BackdropLayer.Parent = MainFrame
-
     local function createAuroraMeshOrb(name, color, size, pos, baseTrans)
         local orb = create("Frame", {
             Name = name,
@@ -386,11 +358,9 @@ function Library:CreateWindow(config)
         orb.Parent = BackdropLayer
         return orb
     end
-
     local OrbGold = createAuroraMeshOrb("OrbGold", Library.Theme.GoldPrimary, UDim2.new(0, 360, 0, 360), UDim2.new(0.15, 0, 0.25, 0), 0.58)
     local OrbPetrol = createAuroraMeshOrb("OrbPetrol", Library.Theme.PetrolLight, UDim2.new(0, 420, 0, 420), UDim2.new(0.85, 0, 0.75, 0), 0.60)
     local OrbAmber = createAuroraMeshOrb("OrbAmber", Library.Theme.GoldDark, UDim2.new(0, 300, 0, 300), UDim2.new(0.5, 0, 0.9, 0), 0.65)
-
     local GlassOverlay = create("Frame", {
         Name = "GlassOverlay",
         Size = UDim2.new(1, 0, 1, 0),
@@ -401,9 +371,7 @@ function Library:CreateWindow(config)
         create("UICorner", { CornerRadius = UDim.new(0, 20) })
     })
     GlassOverlay.Parent = BackdropLayer
-
     addDualToneStroke(MainFrame, 1.2, 0.3, true)
-
     -- Aurora Motion
     local auroraStep = 0
     RunService.RenderStepped:Connect(function(dt)
@@ -424,10 +392,8 @@ function Library:CreateWindow(config)
             grad.Rotation = (grad.Rotation + dt * 18) % 360
         end
     end)
-
     -- Window Dragging
     local Dragging, DragInput, DragStart, StartPos = false, nil, nil, nil
-
     MainFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
@@ -441,13 +407,11 @@ function Library:CreateWindow(config)
             end)
         end
     end)
-
     MainFrame.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             DragInput = input
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if input == DragInput and Dragging then
             local delta = input.Position - DragStart
@@ -461,7 +425,6 @@ function Library:CreateWindow(config)
             }):Play()
         end
     end)
-
     -- Top Navigation Bar
     local TopNav = create("Frame", {
         Name = "TopNav",
@@ -480,7 +443,6 @@ function Library:CreateWindow(config)
         })
     })
     TopNav.Parent = MainFrame
-
     local BrandSection = create("Frame", {
         Name = "BrandSection",
         Size = UDim2.new(0, 220, 1, 0),
@@ -494,7 +456,6 @@ function Library:CreateWindow(config)
         })
     })
     BrandSection.Parent = TopNav
-
     local LogoContainer = create("Frame", {
         Name = "LogoContainer",
         Size = UDim2.new(0, 34, 0, 34),
@@ -506,7 +467,6 @@ function Library:CreateWindow(config)
     })
     addDualToneStroke(LogoContainer, 1.2, 0.3, true)
     LogoContainer.Parent = BrandSection
-
     if CustomLogo then
         create("ImageLabel", {
             Size = UDim2.new(1, -6, 1, -6),
@@ -530,7 +490,6 @@ function Library:CreateWindow(config)
             Parent = LogoContainer
         })
     end
-
     local BrandTextGroup = create("Frame", {
         Name = "BrandTextGroup",
         Size = UDim2.new(0, 170, 1, 0),
@@ -561,7 +520,6 @@ function Library:CreateWindow(config)
         })
     })
     BrandTextGroup.Parent = BrandSection
-
     local RightNav = create("Frame", {
         Name = "RightNav",
         Size = UDim2.new(0, 310, 1, 0),
@@ -577,7 +535,6 @@ function Library:CreateWindow(config)
         })
     })
     RightNav.Parent = TopNav
-
     local function createPillBadge(icon, labelText, valText, valColor)
         local pill = create("Frame", {
             Name = "Pill_" .. labelText,
@@ -612,12 +569,10 @@ function Library:CreateWindow(config)
         addDualToneStroke(pill, 1, 0.5, false)
         return pill
     end
-
     local SessionPill = createPillBadge(Library.Icons.Clock, "Session", "00:00", Library.Theme.TextWhite)
     local PingPill = createPillBadge(Library.Icons.Wifi, "Ping", "42.0 ms", Library.Theme.StatusGreen)
     SessionPill.Parent = RightNav
     PingPill.Parent = RightNav
-
     local function createNavBtn(name, icon, callback)
         local btn = create("TextButton", {
             Name = name,
@@ -640,7 +595,6 @@ function Library:CreateWindow(config)
             })
         })
         addDualToneStroke(btn, 1, 0.5, false)
-
         btn.MouseEnter:Connect(function()
             TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.PetrolLight, BackgroundTransparency = 0.2 }):Play()
         end)
@@ -650,7 +604,6 @@ function Library:CreateWindow(config)
         btn.MouseButton1Click:Connect(callback)
         return btn
     end
-
     -- Container unter TopNav
     local BodyContainer = create("Frame", {
         Name = "BodyContainer",
@@ -662,7 +615,6 @@ function Library:CreateWindow(config)
     })
     BodyContainer.Parent = MainFrame
     Window.BodyContainer = BodyContainer
-
     local MinBtn = createNavBtn("MinBtn", Library.Icons.Minimize, function()
         Window._isMinimized = not Window._isMinimized
         if Window._isMinimized then
@@ -680,7 +632,6 @@ function Library:CreateWindow(config)
         end
     end)
     MinBtn.Parent = RightNav
-
     local CloseBtn = createNavBtn("CloseBtn", Library.Icons.Close, function()
         TweenService:Create(MainFrame, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.new(0, 0, 0, 0),
@@ -690,7 +641,6 @@ function Library:CreateWindow(config)
         gui:Destroy()
     end)
     CloseBtn.Parent = RightNav
-
     -- Sidebar (Tab Buttons)
     local TabSidebar = create("ScrollingFrame", {
         Name = "TabSidebar",
@@ -718,7 +668,6 @@ function Library:CreateWindow(config)
     })
     addDualToneStroke(TabSidebar, 1, 0.5, false)
     TabSidebar.Parent = BodyContainer
-
     -- Page Container (Tab Contents)
     local ContentContainer = create("Frame", {
         Name = "ContentContainer",
@@ -729,7 +678,6 @@ function Library:CreateWindow(config)
         ZIndex = 6
     })
     ContentContainer.Parent = BodyContainer
-
     -- ================================================================
     -- TAB ERSTELLUNG: Window:MakeTab({Name = "Visuals", Icon = "...", PremiumOnly = false})
     -- ================================================================
@@ -737,12 +685,10 @@ function Library:CreateWindow(config)
         tabConfig = tabConfig or {}
         local tabName = tabConfig.Name or tabConfig.Title or "Tab"
         local tabIcon = tabConfig.Icon or tabConfig.Image or Library.Icons.Sparkle
-
         local Tab = {
             Name = tabName,
             Elements = {}
         }
-
         -- Scrollbare Seite für Tab-Inhalte
         local TabPage = create("ScrollingFrame", {
             Name = "Page_" .. tabName,
@@ -769,7 +715,6 @@ function Library:CreateWindow(config)
         })
         TabPage.Parent = ContentContainer
         Tab.Page = TabPage
-
         -- Tab Sidebar Button
         local TabBtn = create("TextButton", {
             Name = "TabBtn_" .. tabName,
@@ -808,7 +753,6 @@ function Library:CreateWindow(config)
         addDualToneStroke(TabBtn, 1, 0.8, false)
         TabBtn.Parent = TabSidebar
         Tab.Button = TabBtn
-
         local function activateTab()
             for _, otherTab in pairs(Window.Tabs) do
                 otherTab.Page.Visible = false
@@ -821,7 +765,6 @@ function Library:CreateWindow(config)
                 if lbl then lbl.TextColor3 = Library.Theme.TextSecondary end
                 if ico then ico.ImageColor3 = Library.Theme.TextSecondary end
             end
-
             TabPage.Visible = true
             Window.ActiveTab = Tab
             TweenService:Create(TabBtn, TweenInfo.new(0.2), {
@@ -833,18 +776,14 @@ function Library:CreateWindow(config)
             if lbl then lbl.TextColor3 = Library.Theme.GoldLight end
             if ico then ico.ImageColor3 = Library.Theme.GoldPrimary end
         end
-
         TabBtn.MouseButton1Click:Connect(activateTab)
-
         table.insert(Window.Tabs, Tab)
         if #Window.Tabs == 1 then
             activateTab()
         end
-
         -- ============================================================
         -- TAB ELEMENTE (Orion-Style API)
         -- ============================================================
-
         -- 1. SECTION
         function Tab:AddSection(secConfig)
             local title = type(secConfig) == "table" and (secConfig.Name or secConfig.Title) or tostring(secConfig or "Section")
@@ -868,13 +807,11 @@ function Library:CreateWindow(config)
             sectionFrame.Parent = TabPage
             return sectionFrame
         end
-
         -- 2. BUTTON
         function Tab:AddButton(btnConfig)
             btnConfig = btnConfig or {}
             local btnName = btnConfig.Name or btnConfig.Title or "Button"
             local callback = btnConfig.Callback or function() end
-
             local btnCard = create("TextButton", {
                 Name = "BtnCard_" .. btnName,
                 Size = UDim2.new(1, 0, 0, 38),
@@ -908,7 +845,6 @@ function Library:CreateWindow(config)
             })
             addDualToneStroke(btnCard, 1, 0.5, false)
             btnCard.Parent = TabPage
-
             btnCard.MouseEnter:Connect(function()
                 TweenService:Create(btnCard, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.ObsidianElevated, BackgroundTransparency = 0.15 }):Play()
             end)
@@ -918,7 +854,6 @@ function Library:CreateWindow(config)
             btnCard.MouseButton1Click:Connect(function()
                 callback()
             end)
-
             return {
                 Set = function(self, newText)
                     local lbl = btnCard:FindFirstChildOfClass("TextLabel")
@@ -926,14 +861,12 @@ function Library:CreateWindow(config)
                 end
             }
         end
-
         -- 3. TOGGLE
         function Tab:AddToggle(togConfig)
             togConfig = togConfig or {}
             local togName = togConfig.Name or togConfig.Title or "Toggle"
             local state = (togConfig.Default == true)
             local callback = togConfig.Callback or function(val) end
-
             local togCard = create("TextButton", {
                 Name = "TogCard_" .. togName,
                 Size = UDim2.new(1, 0, 0, 38),
@@ -958,7 +891,6 @@ function Library:CreateWindow(config)
             })
             addDualToneStroke(togCard, 1, 0.5, false)
             togCard.Parent = TabPage
-
             local switchBg = create("Frame", {
                 Name = "SwitchBg",
                 Size = UDim2.new(0, 40, 0, 20),
@@ -970,7 +902,6 @@ function Library:CreateWindow(config)
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
             })
             switchBg.Parent = togCard
-
             local switchKnob = create("Frame", {
                 Name = "Knob",
                 Size = UDim2.new(0, 16, 0, 16),
@@ -982,7 +913,6 @@ function Library:CreateWindow(config)
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
             })
             switchKnob.Parent = switchBg
-
             local function updateToggle(newState)
                 state = newState
                 TweenService:Create(switchBg, TweenInfo.new(0.2), {
@@ -994,11 +924,9 @@ function Library:CreateWindow(config)
                 }):Play()
                 pcall(callback, state)
             end
-
             togCard.MouseButton1Click:Connect(function()
                 updateToggle(not state)
             end)
-
             return {
                 Set = function(self, newVal)
                     updateToggle(newVal)
@@ -1006,7 +934,6 @@ function Library:CreateWindow(config)
                 Value = state
             }
         end
-
         -- 4. SLIDER
         function Tab:AddSlider(sldConfig)
             sldConfig = sldConfig or {}
@@ -1017,9 +944,7 @@ function Library:CreateWindow(config)
             local increment = sldConfig.Increment or 1
             local valueName = sldConfig.ValueName or ""
             local callback = sldConfig.Callback or function(val) end
-
             local currentVal = math.clamp(default, min, max)
-
             local sldCard = create("Frame", {
                 Name = "SldCard_" .. sldName,
                 Size = UDim2.new(1, 0, 0, 52),
@@ -1042,7 +967,6 @@ function Library:CreateWindow(config)
             })
             addDualToneStroke(sldCard, 1, 0.5, false)
             sldCard.Parent = TabPage
-
             local valLabel = create("TextLabel", {
                 Size = UDim2.new(0.3, 0, 0, 16),
                 Position = UDim2.new(0.7, 0, 0, 0),
@@ -1055,7 +979,6 @@ function Library:CreateWindow(config)
                 ZIndex = 9
             })
             valLabel.Parent = sldCard
-
             local trackBar = create("Frame", {
                 Name = "Track",
                 Size = UDim2.new(1, 0, 0, 6),
@@ -1066,7 +989,6 @@ function Library:CreateWindow(config)
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
             })
             trackBar.Parent = sldCard
-
             local fillBar = create("Frame", {
                 Name = "Fill",
                 Size = UDim2.new((currentVal - min) / (max - min), 0, 1, 0),
@@ -1082,43 +1004,35 @@ function Library:CreateWindow(config)
                 })
             })
             fillBar.Parent = trackBar
-
             local sldDragging = false
-
             local function updateSlider(input)
                 local pos = math.clamp((input.Position.X - trackBar.AbsolutePosition.X) / trackBar.AbsoluteSize.X, 0, 1)
                 local rawVal = min + (max - min) * pos
                 local steppedVal = math.floor(rawVal / increment + 0.5) * increment
                 steppedVal = math.clamp(steppedVal, min, max)
-
                 currentVal = steppedVal
                 valLabel.Text = tostring(currentVal) .. valueName
                 TweenService:Create(fillBar, TweenInfo.new(0.05, Enum.EasingStyle.Linear), {
                     Size = UDim2.new((currentVal - min) / (max - min), 0, 1, 0)
                 }):Play()
-
                 pcall(callback, currentVal)
             end
-
             trackBar.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                     sldDragging = true
                     updateSlider(input)
                 end
             end)
-
             UserInputService.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                     sldDragging = false
                 end
             end)
-
             UserInputService.InputChanged:Connect(function(input)
                 if sldDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                     updateSlider(input)
                 end
             end)
-
             return {
                 Set = function(self, newVal)
                     currentVal = math.clamp(newVal, min, max)
@@ -1129,7 +1043,6 @@ function Library:CreateWindow(config)
                 Value = currentVal
             }
         end
-
         -- 5. DROPDOWN
         function Tab:AddDropdown(ddConfig)
             ddConfig = ddConfig or {}
@@ -1137,10 +1050,8 @@ function Library:CreateWindow(config)
             local options = ddConfig.Options or {}
             local default = ddConfig.Default or options[1] or ""
             local callback = ddConfig.Callback or function(val) end
-
             local currentOption = default
             local isExpanded = false
-
             local ddCard = create("Frame", {
                 Name = "DDCard_" .. ddName,
                 Size = UDim2.new(1, 0, 0, 38),
@@ -1153,7 +1064,6 @@ function Library:CreateWindow(config)
             })
             addDualToneStroke(ddCard, 1, 0.5, false)
             ddCard.Parent = TabPage
-
             local headerBtn = create("TextButton", {
                 Name = "Header",
                 Size = UDim2.new(1, 0, 0, 38),
@@ -1197,7 +1107,6 @@ function Library:CreateWindow(config)
                 })
             })
             headerBtn.Parent = ddCard
-
             local optionList = create("Frame", {
                 Name = "OptionList",
                 Size = UDim2.new(1, -16, 0, 0),
@@ -1211,12 +1120,10 @@ function Library:CreateWindow(config)
                 })
             })
             optionList.Parent = ddCard
-
             local function renderOptions()
                 for _, child in ipairs(optionList:GetChildren()) do
                     if child:IsA("TextButton") then child:Destroy() end
                 end
-
                 for idx, opt in ipairs(options) do
                     local optBtn = create("TextButton", {
                         Name = "Opt_" .. tostring(opt),
@@ -1242,7 +1149,6 @@ function Library:CreateWindow(config)
                         })
                     })
                     optBtn.Parent = optionList
-
                     optBtn.MouseButton1Click:Connect(function()
                         currentOption = opt
                         local selLbl = headerBtn:FindFirstChild("SelectedLabel")
@@ -1257,9 +1163,7 @@ function Library:CreateWindow(config)
                     end)
                 end
             end
-
             renderOptions()
-
             headerBtn.MouseButton1Click:Connect(function()
                 isExpanded = not isExpanded
                 local targetHeight = isExpanded and (44 + #options * 32) or 38
@@ -1273,7 +1177,6 @@ function Library:CreateWindow(config)
                     Size = UDim2.new(1, 0, 0, targetHeight)
                 }):Play()
             end)
-
             return {
                 Set = function(self, newVal)
                     currentOption = newVal
@@ -1292,7 +1195,6 @@ function Library:CreateWindow(config)
                 Value = currentOption
             }
         end
-
         -- 6. TEXTBOX
         function Tab:AddTextbox(tbConfig)
             tbConfig = tbConfig or {}
@@ -1301,7 +1203,6 @@ function Library:CreateWindow(config)
             local placeholder = tbConfig.Placeholder or "Enter text..."
             local clearOnFocus = (tbConfig.TextDisappear == true)
             local callback = tbConfig.Callback or function(val) end
-
             local tbCard = create("Frame", {
                 Name = "TBCard_" .. tbName,
                 Size = UDim2.new(1, 0, 0, 42),
@@ -1324,7 +1225,6 @@ function Library:CreateWindow(config)
             })
             addDualToneStroke(tbCard, 1, 0.5, false)
             tbCard.Parent = TabPage
-
             local boxContainer = create("Frame", {
                 Size = UDim2.new(0.55, 0, 0, 28),
                 AnchorPoint = Vector2.new(1, 0.5),
@@ -1337,7 +1237,6 @@ function Library:CreateWindow(config)
                 create("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) })
             })
             boxContainer.Parent = tbCard
-
             local box = create("TextBox", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
@@ -1352,11 +1251,9 @@ function Library:CreateWindow(config)
                 ZIndex = 10
             })
             box.Parent = boxContainer
-
             box.FocusLost:Connect(function()
                 pcall(callback, box.Text)
             end)
-
             return {
                 Set = function(self, newVal)
                     box.Text = tostring(newVal)
@@ -1365,17 +1262,14 @@ function Library:CreateWindow(config)
                 Value = box.Text
             }
         end
-
         -- 7. KEYBIND
         function Tab:AddBind(bindConfig)
             bindConfig = bindConfig or {}
             local bindName = bindConfig.Name or bindConfig.Title or "Keybind"
             local default = bindConfig.Default or Enum.KeyCode.E
             local callback = bindConfig.Callback or function() end
-
             local currentKey = default
             local isListening = false
-
             local bindCard = create("Frame", {
                 Name = "BindCard_" .. bindName,
                 Size = UDim2.new(1, 0, 0, 38),
@@ -1398,7 +1292,6 @@ function Library:CreateWindow(config)
             })
             addDualToneStroke(bindCard, 1, 0.5, false)
             bindCard.Parent = TabPage
-
             local bindBtn = create("TextButton", {
                 Size = UDim2.new(0, 68, 0, 24),
                 AnchorPoint = Vector2.new(1, 0.5),
@@ -1415,13 +1308,11 @@ function Library:CreateWindow(config)
                 create("UICorner", { CornerRadius = UDim.new(0, 6) })
             })
             bindBtn.Parent = bindCard
-
             bindBtn.MouseButton1Click:Connect(function()
                 isListening = true
                 bindBtn.Text = "..."
                 bindBtn.TextColor3 = Library.Theme.StatusGreen
             end)
-
             UserInputService.InputBegan:Connect(function(input, gpe)
                 if isListening and not gpe then
                     if input.UserInputType == Enum.UserInputType.Keyboard then
@@ -1434,7 +1325,6 @@ function Library:CreateWindow(config)
                     pcall(callback)
                 end
             end)
-
             return {
                 Set = function(self, newKey)
                     currentKey = newKey
@@ -1443,13 +1333,11 @@ function Library:CreateWindow(config)
                 Value = currentKey
             }
         end
-
         -- 8. PARAGRAPH
         function Tab:AddParagraph(pConfig)
             pConfig = pConfig or {}
             local pTitle = pConfig.Title or pConfig.Name or "Info"
             local pContent = pConfig.Content or pConfig.Text or ""
-
             local pCard = create("Frame", {
                 Name = "PCard_" .. pTitle,
                 Size = UDim2.new(1, 0, 0, 54),
@@ -1486,7 +1374,6 @@ function Library:CreateWindow(config)
             })
             addDualToneStroke(pCard, 1, 0.6, false)
             pCard.Parent = TabPage
-
             return {
                 Set = function(self, newContent)
                     local cnt = pCard:FindFirstChild("Content")
@@ -1494,7 +1381,6 @@ function Library:CreateWindow(config)
                 end
             }
         end
-
         -- 9. LABEL
         function Tab:AddLabel(labelText)
             local lblCard = create("Frame", {
@@ -1526,10 +1412,8 @@ function Library:CreateWindow(config)
                 end
             }
         end
-
         return Tab
     end
-
     -- ================================================================
     -- 4-SEKUNDEN INTRO LAUNCH SEQUENCE
     -- ================================================================
@@ -1544,12 +1428,10 @@ function Library:CreateWindow(config)
                 ZIndex = 200
             })
             IntroOverlay.Parent = gui
-
             local GlowGold1 = Color3.fromRGB(255, 225, 130)
             local GlowGold2 = Color3.fromRGB(220, 160, 60)
             local GlowPetrol1 = Color3.fromRGB(0, 235, 255)
             local GlowPetrol2 = Color3.fromRGB(25, 110, 150)
-
             local function createInwardGlow(name, size, pos, color1, color2, rot)
                 local glow = create("Frame", {
                     Name = name,
@@ -1578,17 +1460,14 @@ function Library:CreateWindow(config)
                 glow.Parent = IntroOverlay
                 return glow
             end
-
             local TopInwardGlow = createInwardGlow("TopInwardGlow", UDim2.new(1, 0, 0, 220), UDim2.new(0, 0, 0, 0), GlowGold1, GlowGold2, 90)
             local RightInwardGlow = createInwardGlow("RightInwardGlow", UDim2.new(0, 220, 1, 0), UDim2.new(1, -220, 0, 0), GlowPetrol1, GlowPetrol2, 180)
             local BottomInwardGlow = createInwardGlow("BottomInwardGlow", UDim2.new(1, 0, 0, 220), UDim2.new(0, 0, 1, -220), GlowGold1, GlowGold2, 270)
             local LeftInwardGlow = createInwardGlow("LeftInwardGlow", UDim2.new(0, 220, 1, 0), UDim2.new(0, 0, 0, 0), GlowPetrol1, GlowPetrol2, 0)
-
             TweenService:Create(TopInwardGlow, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
             TweenService:Create(RightInwardGlow, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
             TweenService:Create(BottomInwardGlow, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
             TweenService:Create(LeftInwardGlow, TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 0 }):Play()
-
             local breathStep = 0
             local breathingConn
             breathingConn = RunService.RenderStepped:Connect(function(dt)
@@ -1600,7 +1479,6 @@ function Library:CreateWindow(config)
                 BottomInwardGlow.BackgroundTransparency = inwardTrans
                 LeftInwardGlow.BackgroundTransparency = inwardTrans
             end)
-
             local GiantLogo = create("ImageLabel", {
                 Name = "GiantLogo",
                 Size = UDim2.new(0, 260, 0, 260),
@@ -1628,7 +1506,6 @@ function Library:CreateWindow(config)
                 })
                 GiantFallbackText.Parent = GiantLogo
             end
-
             local IntroTitle = create("TextLabel", {
                 Size = UDim2.new(0, 460, 0, 36),
                 AnchorPoint = Vector2.new(0.5, 0.5),
@@ -1642,7 +1519,6 @@ function Library:CreateWindow(config)
                 ZIndex = 210
             })
             IntroTitle.Parent = IntroOverlay
-
             local ProgressTrack = create("Frame", {
                 Name = "ProgressTrack",
                 Size = UDim2.new(0, 260, 0, 5),
@@ -1655,7 +1531,6 @@ function Library:CreateWindow(config)
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
             })
             ProgressTrack.Parent = IntroOverlay
-
             local ProgressBar = create("Frame", {
                 Name = "ProgressBar",
                 Size = UDim2.new(0, 0, 1, 0),
@@ -1665,7 +1540,6 @@ function Library:CreateWindow(config)
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
             })
             ProgressBar.Parent = ProgressTrack
-
             task.wait(0.15)
             TweenService:Create(GiantLogo, TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 300, 0, 300),
@@ -1674,40 +1548,31 @@ function Library:CreateWindow(config)
             if GiantFallbackText then
                 TweenService:Create(GiantFallbackText, TweenInfo.new(0.8), { TextTransparency = 0.2 }):Play()
             end
-
             TweenService:Create(IntroTitle, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { TextTransparency = 0 }):Play()
-
             local loadTime = math.max(1, IntroDuration - 0.5)
             TweenService:Create(ProgressBar, TweenInfo.new(loadTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
                 Size = UDim2.new(1, 0, 1, 0)
             }):Play()
-
             task.wait(loadTime)
-
             MainFrame.Visible = true
             MainFrame.Size = UDim2.new(0, 800, 0, 500)
             MainFrame.BackgroundTransparency = 0.7
-
             TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                 Size = UDim2.new(0, 840, 0, 540),
                 BackgroundTransparency = 0.1
             }):Play()
-
             TweenService:Create(GiantLogo, TweenInfo.new(0.4), { ImageTransparency = 1, Size = UDim2.new(0, 340, 0, 340) }):Play()
             if GiantFallbackText then TweenService:Create(GiantFallbackText, TweenInfo.new(0.4), { TextTransparency = 1 }):Play() end
             TweenService:Create(IntroTitle, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
             TweenService:Create(ProgressTrack, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
             TweenService:Create(ProgressBar, TweenInfo.new(0.35), { BackgroundTransparency = 1 }):Play()
-
             TweenService:Create(TopInwardGlow, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
             TweenService:Create(BottomInwardGlow, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
             TweenService:Create(LeftInwardGlow, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
             TweenService:Create(RightInwardGlow, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
-
             task.wait(0.55)
             if breathingConn then breathingConn:Disconnect() end
             IntroOverlay:Destroy()
-
             Library:Notify({
                 Title = Title,
                 Content = "Universal Hub Initialized. Welcome, " .. (LocalPlayer.DisplayName or "User"),
@@ -1715,7 +1580,6 @@ function Library:CreateWindow(config)
             })
         end)
     end
-
     -- Live Session Time & Ping Monitor
     local startTime = tick()
     task.spawn(function()
@@ -1730,7 +1594,6 @@ function Library:CreateWindow(config)
             task.wait(1)
         end
     end)
-
     task.spawn(function()
         local pingLabel = PingPill:FindFirstChild("ValText")
         while gui and gui.Parent do
@@ -1745,12 +1608,9 @@ function Library:CreateWindow(config)
             task.wait(0.8)
         end
     end)
-
     return Window
 end
-
 function Library:Init()
     return true
 end
-
 return Library
