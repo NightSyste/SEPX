@@ -27,9 +27,10 @@ else
     ParentContainer = LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Farbschema
+-- Farbschema (Obsidian Cyber)
 Library.Theme = {
     ObsidianBase = Color3.fromRGB(11, 14, 20),
+    ObsidianSidebar = Color3.fromRGB(13, 17, 25),
     ObsidianCard = Color3.fromRGB(16, 21, 30),
     ObsidianElevated = Color3.fromRGB(22, 28, 40),
     InputDark = Color3.fromRGB(13, 17, 25),
@@ -49,6 +50,7 @@ Library.Theme = {
     TextDarkButton = Color3.fromRGB(18, 14, 8),
     
     StatusGreen = Color3.fromRGB(65, 225, 145),
+    StatusRed = Color3.fromRGB(235, 75, 75),
     
     FontBlack = Enum.Font.GothamBold,
     FontBold = Enum.Font.GothamBold,
@@ -74,10 +76,11 @@ Library.Icons = {
     Sparkle = "rbxassetid://10734951847",
     Bolt = "rbxassetid://10734898476",
     Gamepad = "rbxassetid://10734950157",
-    Code = "rbxassetid://10734950384"
+    Code = "rbxassetid://10734950384",
+    ChevronDown = "rbxassetid://10709790948"
 }
 
--- Hilfsfunktionen
+-- Sichere Instanzerstellung
 local function create(className, properties, children)
     local inst = Instance.new(className)
     for prop, val in pairs(properties or {}) do
@@ -184,7 +187,7 @@ function Library:GetHWID()
     return "SEPX-" .. string.sub(id, 1, 8)
 end
 
--- Notification System
+-- Root GUI Container & Toast
 local ScreenGui = nil
 local ToastContainer = nil
 
@@ -225,8 +228,27 @@ local function ensureGui()
     return ScreenGui
 end
 
-function Library:Notify(title, message, isSuccess)
+-- Universeller Notifier (Unterstützt Orion-Style Table ODER 3 Parameter)
+function Library:Notify(titleOrConfig, message, isSuccess)
     ensureGui()
+    local title = "Notification"
+    local desc = ""
+    local success = true
+    local duration = 3.2
+    local customIcon = nil
+
+    if type(titleOrConfig) == "table" then
+        title = titleOrConfig.Title or titleOrConfig.Name or "Notification"
+        desc = titleOrConfig.Content or titleOrConfig.Description or titleOrConfig.Text or ""
+        customIcon = titleOrConfig.Image or titleOrConfig.Icon
+        duration = titleOrConfig.Time or titleOrConfig.Duration or 3.2
+        success = (titleOrConfig.Success ~= false)
+    else
+        title = tostring(titleOrConfig or "Notification")
+        desc = tostring(message or "")
+        success = (isSuccess ~= false)
+    end
+
     local toast = create("Frame", {
         Name = "Toast",
         Size = UDim2.new(1, 0, 0, 58),
@@ -246,8 +268,8 @@ function Library:Notify(title, message, isSuccess)
             Size = UDim2.new(0, 18, 0, 18),
             Position = UDim2.new(0, 0, 0.5, -9),
             BackgroundTransparency = 1,
-            Image = isSuccess and Library.Icons.Check or Library.Icons.Sparkle,
-            ImageColor3 = isSuccess and Library.Theme.GoldPrimary or Library.Theme.PetrolLight,
+            Image = customIcon or (success and Library.Icons.Check or Library.Icons.Sparkle),
+            ImageColor3 = success and Library.Theme.GoldPrimary or Library.Theme.PetrolLight,
             ZIndex = 152
         }),
         create("TextLabel", {
@@ -266,7 +288,7 @@ function Library:Notify(title, message, isSuccess)
             Position = UDim2.new(0, 28, 0, 18),
             BackgroundTransparency = 1,
             Font = Library.Theme.FontRegular,
-            Text = message,
+            Text = desc,
             TextColor3 = Library.Theme.TextSecondary,
             TextSize = 10.5,
             TextXAlignment = Enum.TextXAlignment.Left,
@@ -281,7 +303,7 @@ function Library:Notify(title, message, isSuccess)
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
 
-    task.delay(3.2, function()
+    task.delay(duration, function()
         if toast and toast.Parent then
             local tw = TweenService:Create(toast, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                 Position = UDim2.new(1, 350, 0, 0)
@@ -294,41 +316,30 @@ function Library:Notify(title, message, isSuccess)
     end)
 end
 
--- Window Erstellung
+-- ====================================================================
+-- WINDOW ERSTELLUNG (Window:MakeTab, AddToggle, AddSlider, AddButton etc.)
+-- ====================================================================
 function Library:CreateWindow(config)
     config = config or {}
-    local Title = config.Title or "SEPX HUB"
-    local SubTitle = config.SubTitle or "Enterprise Edition • v2.4"
+    local Title = config.Name or config.Title or "SEPX HUB"
+    local SubTitle = config.SubTitle or config.Subtitle or "Enterprise Edition • v2.4"
     local IntroText = config.IntroText or "LOADED UI"
     local IntroDuration = config.IntroDuration or 4
     local EnableIntro = (config.EnableIntro ~= false)
-    local CustomLogo = config.Logo or nil
-    local DefaultKey = config.DefaultKey or ""
+    local CustomLogo = config.Logo or config.Icon or nil
 
     local gui = ensureGui()
 
     local Window = {
-        _telemetryRows = {},
-        _onRedeemCallback = nil,
+        Tabs = {},
+        ActiveTab = nil,
         _isMinimized = false
     }
 
-    -- Telemetriedaten
-    local currentGameTitle = "Universal Experience"
-    local currentPlaceId = tostring(game.PlaceId)
-    local currentGameId = tostring(game.GameId ~= 0 and game.GameId or game.PlaceId)
-
-    pcall(function()
-        local productInfo = MarketplaceService:GetProductInfo(game.PlaceId)
-        if productInfo and productInfo.Name and productInfo.Name ~= "" then
-            currentGameTitle = productInfo.Name
-        end
-    end)
-
-    -- Hauptfenster
+    -- Hauptfenster Frame
     local MainFrame = create("Frame", {
         Name = "MainFrame",
-        Size = UDim2.new(0, 820, 0, 530),
+        Size = UDim2.new(0, 840, 0, 540),
         AnchorPoint = Vector2.new(0.5, 0.5),
         Position = UDim2.new(0.5, 0, 0.5, 0),
         BackgroundColor3 = Library.Theme.ObsidianBase,
@@ -341,7 +352,7 @@ function Library:CreateWindow(config)
     MainFrame.Parent = gui
     Window.MainFrame = MainFrame
 
-    -- Backdrop Aurora Orbs
+    -- Aurora Mesh Orbs
     local BackdropLayer = create("Frame", {
         Name = "BackdropLayer",
         Size = UDim2.new(1, 0, 1, 0),
@@ -376,9 +387,9 @@ function Library:CreateWindow(config)
         return orb
     end
 
-    local OrbGold = createAuroraMeshOrb("OrbGold", Library.Theme.GoldPrimary, UDim2.new(0, 340, 0, 340), UDim2.new(0.15, 0, 0.25, 0), 0.58)
-    local OrbPetrol = createAuroraMeshOrb("OrbPetrol", Library.Theme.PetrolLight, UDim2.new(0, 400, 0, 400), UDim2.new(0.85, 0, 0.75, 0), 0.60)
-    local OrbAmber = createAuroraMeshOrb("OrbAmber", Library.Theme.GoldDark, UDim2.new(0, 280, 0, 280), UDim2.new(0.5, 0, 0.9, 0), 0.65)
+    local OrbGold = createAuroraMeshOrb("OrbGold", Library.Theme.GoldPrimary, UDim2.new(0, 360, 0, 360), UDim2.new(0.15, 0, 0.25, 0), 0.58)
+    local OrbPetrol = createAuroraMeshOrb("OrbPetrol", Library.Theme.PetrolLight, UDim2.new(0, 420, 0, 420), UDim2.new(0.85, 0, 0.75, 0), 0.60)
+    local OrbAmber = createAuroraMeshOrb("OrbAmber", Library.Theme.GoldDark, UDim2.new(0, 300, 0, 300), UDim2.new(0.5, 0, 0.9, 0), 0.65)
 
     local GlassOverlay = create("Frame", {
         Name = "GlassOverlay",
@@ -393,7 +404,7 @@ function Library:CreateWindow(config)
 
     addDualToneStroke(MainFrame, 1.2, 0.3, true)
 
-    -- Aurora Animation Drift
+    -- Aurora Motion
     local auroraStep = 0
     RunService.RenderStepped:Connect(function(dt)
         auroraStep = auroraStep + dt * 0.4
@@ -414,7 +425,7 @@ function Library:CreateWindow(config)
         end
     end)
 
-    -- Dragging Engine
+    -- Window Dragging
     local Dragging, DragInput, DragStart, StartPos = false, nil, nil, nil
 
     MainFrame.InputBegan:Connect(function(input)
@@ -472,7 +483,7 @@ function Library:CreateWindow(config)
 
     local BrandSection = create("Frame", {
         Name = "BrandSection",
-        Size = UDim2.new(0, 180, 1, 0),
+        Size = UDim2.new(0, 220, 1, 0),
         BackgroundTransparency = 1,
         ZIndex = 11
     }, {
@@ -522,7 +533,7 @@ function Library:CreateWindow(config)
 
     local BrandTextGroup = create("Frame", {
         Name = "BrandTextGroup",
-        Size = UDim2.new(0, 130, 1, 0),
+        Size = UDim2.new(0, 170, 1, 0),
         BackgroundTransparency = 1,
         ZIndex = 12
     }, {
@@ -551,73 +562,6 @@ function Library:CreateWindow(config)
     })
     BrandTextGroup.Parent = BrandSection
 
-    local GameCapsule = create("TextButton", {
-        Name = "GameCapsule",
-        Size = UDim2.new(0, 230, 0, 26),
-        Position = UDim2.new(0, 195, 0.5, -13),
-        BackgroundColor3 = Library.Theme.ObsidianElevated,
-        BackgroundTransparency = 0.4,
-        AutoButtonColor = false,
-        Text = "",
-        ZIndex = 12
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 13) }),
-        create("UIPadding", {
-            PaddingLeft = UDim.new(0, 8),
-            PaddingRight = UDim.new(0, 8)
-        }),
-        create("Frame", {
-            Name = "LiveDot",
-            Size = UDim2.new(0, 6, 0, 6),
-            Position = UDim2.new(0, 0, 0.5, -3),
-            BackgroundColor3 = Library.Theme.StatusGreen,
-            ZIndex = 13
-        }, {
-            create("UICorner", { CornerRadius = UDim.new(1, 0) })
-        }),
-        create("TextLabel", {
-            Name = "GameTitleText",
-            Size = UDim2.new(0.55, -10, 1, 0),
-            Position = UDim2.new(0, 10, 0, 0),
-            BackgroundTransparency = 1,
-            Font = Library.Theme.FontBold,
-            Text = currentGameTitle,
-            TextColor3 = Library.Theme.TextWhite,
-            TextSize = 10,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 13
-        }),
-        create("Frame", {
-            Name = "Divider",
-            Size = UDim2.new(0, 1, 0, 12),
-            Position = UDim2.new(0.56, 0, 0.5, -6),
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.85,
-            ZIndex = 13
-        }),
-        create("TextLabel", {
-            Name = "PlaceIdLabel",
-            Size = UDim2.new(0.42, 0, 1, 0),
-            Position = UDim2.new(0.58, 4, 0, 0),
-            BackgroundTransparency = 1,
-            Font = Library.Theme.FontMedium,
-            Text = "ID: " .. currentPlaceId,
-            TextColor3 = Library.Theme.GoldPrimary,
-            TextSize = 9,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 13
-        })
-    })
-    addDualToneStroke(GameCapsule, 1, 0.5, false)
-    GameCapsule.Parent = TopNav
-
-    GameCapsule.MouseButton1Click:Connect(function()
-        Library:SetClipboard(currentPlaceId)
-        Library:Notify("Place ID Kopiert", "Place ID " .. currentPlaceId .. " in Zwischenablage!", true)
-    end)
-
     local RightNav = create("Frame", {
         Name = "RightNav",
         Size = UDim2.new(0, 310, 1, 0),
@@ -637,7 +581,7 @@ function Library:CreateWindow(config)
     local function createPillBadge(icon, labelText, valText, valColor)
         local pill = create("Frame", {
             Name = "Pill_" .. labelText,
-            Size = UDim2.new(0, 68, 0, 26),
+            Size = UDim2.new(0, 72, 0, 26),
             BackgroundColor3 = Library.Theme.ObsidianElevated,
             BackgroundTransparency = 0.45,
             ZIndex = 12
@@ -707,37 +651,31 @@ function Library:CreateWindow(config)
         return btn
     end
 
-    local DashboardGrid = create("Frame", {
-        Name = "DashboardGrid",
+    -- Container unter TopNav
+    local BodyContainer = create("Frame", {
+        Name = "BodyContainer",
         Size = UDim2.new(1, 0, 1, -54),
         Position = UDim2.new(0, 0, 0, 54),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         ZIndex = 5
-    }, {
-        create("UIPadding", {
-            PaddingTop = UDim.new(0, 12),
-            PaddingBottom = UDim.new(0, 12),
-            PaddingLeft = UDim.new(0, 16),
-            PaddingRight = UDim.new(0, 16)
-        })
     })
-    DashboardGrid.Parent = MainFrame
-    Window.DashboardGrid = DashboardGrid
+    BodyContainer.Parent = MainFrame
+    Window.BodyContainer = BodyContainer
 
     local MinBtn = createNavBtn("MinBtn", Library.Icons.Minimize, function()
         Window._isMinimized = not Window._isMinimized
         if Window._isMinimized then
-            DashboardGrid.Visible = false
+            BodyContainer.Visible = false
             TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 820, 0, 54)
+                Size = UDim2.new(0, 840, 0, 54)
             }):Play()
         else
             TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 820, 0, 530)
+                Size = UDim2.new(0, 840, 0, 540)
             }):Play()
             task.delay(0.08, function()
-                if not Window._isMinimized then DashboardGrid.Visible = true end
+                if not Window._isMinimized then BodyContainer.Visible = true end
             end)
         end
     end)
@@ -753,748 +691,848 @@ function Library:CreateWindow(config)
     end)
     CloseBtn.Parent = RightNav
 
-    -- Linke Spalte (Gateway)
-    local LeftColumn = create("Frame", {
-        Name = "LeftColumn",
-        Size = UDim2.new(0.55, -8, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0),
-        BackgroundColor3 = Library.Theme.ObsidianCard,
-        BackgroundTransparency = 0.4,
+    -- Sidebar (Tab Buttons)
+    local TabSidebar = create("ScrollingFrame", {
+        Name = "TabSidebar",
+        Size = UDim2.new(0, 185, 1, -16),
+        Position = UDim2.new(0, 12, 0, 8),
+        BackgroundColor3 = Library.Theme.ObsidianSidebar,
+        BackgroundTransparency = 0.45,
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = Library.Theme.GoldPrimary,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ZIndex = 6
     }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 16) }),
+        create("UICorner", { CornerRadius = UDim.new(0, 14) }),
         create("UIPadding", {
-            PaddingTop = UDim.new(0, 14),
-            PaddingBottom = UDim.new(0, 14),
-            PaddingLeft = UDim.new(0, 14),
-            PaddingRight = UDim.new(0, 14)
-        })
-    })
-    addDualToneStroke(LeftColumn, 1.1, 0.4, false)
-    LeftColumn.Parent = DashboardGrid
-
-    local GatewayHeader = create("Frame", {
-        Name = "GatewayHeader",
-        Size = UDim2.new(1, 0, 0, 42),
-        BackgroundTransparency = 1,
-        ZIndex = 7
-    }, {
-        create("ImageLabel", {
-            Size = UDim2.new(0, 22, 0, 22),
-            Position = UDim2.new(0, 0, 0, 2),
-            BackgroundTransparency = 1,
-            Image = Library.Icons.Key,
-            ImageColor3 = Library.Theme.GoldPrimary,
-            ZIndex = 7
+            PaddingTop = UDim.new(0, 8),
+            PaddingBottom = UDim.new(0, 8),
+            PaddingLeft = UDim.new(0, 8),
+            PaddingRight = UDim.new(0, 8)
         }),
-        create("TextLabel", {
-            Size = UDim2.new(1, -30, 0, 18),
-            Position = UDim2.new(0, 30, 0, 0),
-            BackgroundTransparency = 1,
-            Font = Library.Theme.FontBold,
-            Text = "AUTHENTICATION GATEWAY",
-            TextColor3 = Library.Theme.TextWhite,
-            TextSize = 13.5,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 7
-        }),
-        create("TextLabel", {
-            Size = UDim2.new(1, -30, 0, 14),
-            Position = UDim2.new(0, 30, 0, 18),
-            BackgroundTransparency = 1,
-            Font = Library.Theme.FontRegular,
-            Text = "Enter license token to authenticate execution & features",
-            TextColor3 = Library.Theme.TextSecondary,
-            TextSize = 9.5,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 7
-        })
-    })
-    GatewayHeader.Parent = LeftColumn
-
-    local KeyBoxContainer = create("Frame", {
-        Name = "KeyBoxContainer",
-        Size = UDim2.new(1, 0, 0, 44),
-        Position = UDim2.new(0, 0, 0, 52),
-        BackgroundColor3 = Library.Theme.InputDark,
-        BackgroundTransparency = 0.3,
-        ZIndex = 7
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 10) }),
-        create("ImageLabel", {
-            Size = UDim2.new(0, 15, 0, 15),
-            Position = UDim2.new(0, 12, 0.5, -7.5),
-            BackgroundTransparency = 1,
-            Image = Library.Icons.Shield,
-            ImageColor3 = Library.Theme.PetrolLight,
-            ZIndex = 8
-        })
-    })
-    local keyStroke = addDualToneStroke(KeyBoxContainer, 1.1, 0.45, false)
-    KeyBoxContainer.Parent = LeftColumn
-
-    local KeyTextBox = create("TextBox", {
-        Name = "KeyTextBox",
-        Size = UDim2.new(1, -95, 1, 0),
-        Position = UDim2.new(0, 38, 0, 0),
-        BackgroundTransparency = 1,
-        Font = Library.Theme.FontMedium,
-        PlaceholderText = "Paste license token (SEPX-XXXX-XXXX)...",
-        PlaceholderColor3 = Library.Theme.TextMuted,
-        Text = DefaultKey,
-        TextColor3 = Library.Theme.GoldLight,
-        TextSize = 11.5,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ClearTextOnFocus = false,
-        ZIndex = 8
-    })
-    KeyTextBox.Parent = KeyBoxContainer
-    Window.KeyTextBox = KeyTextBox
-
-    local PasteBtn = create("TextButton", {
-        Name = "PasteBtn",
-        Size = UDim2.new(0, 46, 0, 24),
-        Position = UDim2.new(1, -52, 0.5, -12),
-        BackgroundColor3 = Library.Theme.ObsidianElevated,
-        BackgroundTransparency = 0.3,
-        Text = "PASTE",
-        Font = Library.Theme.FontBold,
-        TextColor3 = Library.Theme.GoldPrimary,
-        TextSize = 8.5,
-        AutoButtonColor = false,
-        ZIndex = 9
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 6) })
-    })
-    PasteBtn.Parent = KeyBoxContainer
-
-    PasteBtn.MouseButton1Click:Connect(function()
-        pcall(function()
-            if getclipboard then
-                KeyTextBox.Text = getclipboard()
-                Library:Notify("Key Eingefügt", "Lizenzschlüssel eingefügt!", true)
-            end
-        end)
-    end)
-
-    KeyTextBox.Focused:Connect(function()
-        TweenService:Create(keyStroke, TweenInfo.new(0.2), { Transparency = 0, Thickness = 1.4 }):Play()
-    end)
-    KeyTextBox.FocusLost:Connect(function()
-        TweenService:Create(keyStroke, TweenInfo.new(0.2), { Transparency = 0.45, Thickness = 1.1 }):Play()
-    end)
-
-    local HeroActionGrid = create("Frame", {
-        Name = "HeroActionGrid",
-        Size = UDim2.new(1, 0, 0, 42),
-        Position = UDim2.new(0, 0, 0, 108),
-        BackgroundTransparency = 1,
-        ZIndex = 7
-    }, {
         create("UIListLayout", {
-            FillDirection = Enum.FillDirection.Horizontal,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 8)
-        })
-    })
-    HeroActionGrid.Parent = LeftColumn
-
-    local RedeemBtn = create("TextButton", {
-        Name = "RedeemBtn",
-        Size = UDim2.new(0.55, -4, 1, 0),
-        BackgroundColor3 = Library.Theme.GoldPrimary,
-        AutoButtonColor = false,
-        Text = "",
-        LayoutOrder = 1,
-        ZIndex = 8
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 10) }),
-        create("UIGradient", {
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Library.Theme.GoldLight),
-                ColorSequenceKeypoint.new(0.5, Library.Theme.GoldPrimary),
-                ColorSequenceKeypoint.new(1, Library.Theme.GoldDark)
-            }),
-            Rotation = 45
-        }),
-        create("Frame", {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            ZIndex = 9
-        }, {
-            create("UIListLayout", {
-                FillDirection = Enum.FillDirection.Horizontal,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Center,
-                Padding = UDim.new(0, 6)
-            }),
-            create("ImageLabel", {
-                Size = UDim2.new(0, 14, 0, 14),
-                BackgroundTransparency = 1,
-                Image = Library.Icons.Bolt,
-                ImageColor3 = Library.Theme.TextDarkButton,
-                ZIndex = 10
-            }),
-            create("TextLabel", {
-                Size = UDim2.new(0, 0, 1, 0),
-                AutomaticSize = Enum.AutomaticSize.X,
-                BackgroundTransparency = 1,
-                Font = Library.Theme.FontBlack,
-                Text = "LAUNCH / REDEEM",
-                TextColor3 = Library.Theme.TextDarkButton,
-                TextSize = 11,
-                ZIndex = 10
-            })
-        })
-    })
-    RedeemBtn.Parent = HeroActionGrid
-
-    RedeemBtn.MouseButton1Click:Connect(function()
-        local key = KeyTextBox.Text
-        if Window._onRedeemCallback then
-            Window._onRedeemCallback(key)
-        else
-            if key == "" then
-                Library:Notify("Key Erforderlich", "Bitte gib deinen Lizenzschlüssel ein.", false)
-            else
-                Library:Notify("Validierung", "Authentifiziere Lizenzschlüssel...", true)
-                task.wait(0.8)
-                Library:Notify("Zugriff Gewährt", "Willkommen bei " .. Title .. "!", true)
-            end
-        end
-    end)
-
-    local GetKeyBtn = create("TextButton", {
-        Name = "GetKeyBtn",
-        Size = UDim2.new(0.45, -4, 1, 0),
-        BackgroundColor3 = Library.Theme.ObsidianElevated,
-        BackgroundTransparency = 0.35,
-        AutoButtonColor = false,
-        Text = "",
-        LayoutOrder = 2,
-        ZIndex = 8
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 10) }),
-        create("Frame", {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            ZIndex = 9
-        }, {
-            create("UIListLayout", {
-                FillDirection = Enum.FillDirection.Horizontal,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Center,
-                Padding = UDim.new(0, 6)
-            }),
-            create("ImageLabel", {
-                Size = UDim2.new(0, 13, 0, 13),
-                BackgroundTransparency = 1,
-                Image = Library.Icons.Key,
-                ImageColor3 = Library.Theme.GoldPrimary,
-                ZIndex = 10
-            }),
-            create("TextLabel", {
-                Size = UDim2.new(0, 0, 1, 0),
-                AutomaticSize = Enum.AutomaticSize.X,
-                BackgroundTransparency = 1,
-                Font = Library.Theme.FontBold,
-                Text = "GET KEY",
-                TextColor3 = Library.Theme.TextWhite,
-                TextSize = 10.5,
-                ZIndex = 10
-            })
-        })
-    })
-    addDualToneStroke(GetKeyBtn, 1.1, 0.4, false)
-    GetKeyBtn.Parent = HeroActionGrid
-
-    GetKeyBtn.MouseButton1Click:Connect(function()
-        local link = config.GetKeyLink or "https://sepx.cc/getkey"
-        Library:SetClipboard(link)
-        Library:Notify("Link Kopiert", link .. " kopiert!", true)
-    end)
-
-    local UtilGrid = create("Frame", {
-        Name = "UtilGrid",
-        Size = UDim2.new(1, 0, 0, 32),
-        Position = UDim2.new(0, 0, 0, 160),
-        BackgroundTransparency = 1,
-        ZIndex = 7
-    }, {
-        create("UIListLayout", {
-            FillDirection = Enum.FillDirection.Horizontal,
             SortOrder = Enum.SortOrder.LayoutOrder,
             Padding = UDim.new(0, 6)
         })
     })
-    UtilGrid.Parent = LeftColumn
-    Window.UtilGrid = UtilGrid
+    addDualToneStroke(TabSidebar, 1, 0.5, false)
+    TabSidebar.Parent = BodyContainer
 
-    function Window:AddUtilButton(text, icon, callback)
-        local btn = create("TextButton", {
-            Name = "Btn_" .. text,
-            Size = UDim2.new(0.33, -4, 1, 0),
-            BackgroundColor3 = Library.Theme.ObsidianElevated,
-            BackgroundTransparency = 0.4,
-            Text = "",
-            AutoButtonColor = false,
-            ZIndex = 8
+    -- Page Container (Tab Contents)
+    local ContentContainer = create("Frame", {
+        Name = "ContentContainer",
+        Size = UDim2.new(1, -217, 1, -16),
+        Position = UDim2.new(0, 205, 0, 8),
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        ZIndex = 6
+    })
+    ContentContainer.Parent = BodyContainer
+
+    -- ================================================================
+    -- TAB ERSTELLUNG: Window:MakeTab({Name = "Visuals", Icon = "...", PremiumOnly = false})
+    -- ================================================================
+    function Window:MakeTab(tabConfig)
+        tabConfig = tabConfig or {}
+        local tabName = tabConfig.Name or tabConfig.Title or "Tab"
+        local tabIcon = tabConfig.Icon or tabConfig.Image or Library.Icons.Sparkle
+
+        local Tab = {
+            Name = tabName,
+            Elements = {}
+        }
+
+        -- Scrollbare Seite für Tab-Inhalte
+        local TabPage = create("ScrollingFrame", {
+            Name = "Page_" .. tabName,
+            Size = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Library.Theme.GoldPrimary,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            Visible = false,
+            ZIndex = 7
         }, {
-            create("UICorner", { CornerRadius = UDim.new(0, 8) }),
-            create("Frame", {
-                Size = UDim2.new(1, 0, 1, 0),
-                BackgroundTransparency = 1,
-                ZIndex = 9
-            }, {
-                create("UIListLayout", {
-                    FillDirection = Enum.FillDirection.Horizontal,
-                    HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                    VerticalAlignment = Enum.VerticalAlignment.Center,
-                    Padding = UDim.new(0, 5)
-                }),
-                create("ImageLabel", {
-                    Size = UDim2.new(0, 12, 0, 12),
-                    BackgroundTransparency = 1,
-                    Image = icon or Library.Icons.Sparkle,
-                    ImageColor3 = Library.Theme.PetrolLight,
-                    ZIndex = 10
-                }),
-                create("TextLabel", {
-                    Size = UDim2.new(0, 0, 1, 0),
-                    AutomaticSize = Enum.AutomaticSize.X,
-                    BackgroundTransparency = 1,
-                    Font = Library.Theme.FontMedium,
-                    Text = text,
-                    TextColor3 = Library.Theme.TextBody,
-                    TextSize = 9.5,
-                    ZIndex = 10
-                })
+            create("UIPadding", {
+                PaddingTop = UDim.new(0, 2),
+                PaddingBottom = UDim.new(0, 12),
+                PaddingLeft = UDim.new(0, 2),
+                PaddingRight = UDim.new(0, 8)
+            }),
+            create("UIListLayout", {
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 8)
             })
         })
-        addDualToneStroke(btn, 1, 0.5, false)
+        TabPage.Parent = ContentContainer
+        Tab.Page = TabPage
 
-        btn.MouseEnter:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.PetrolPrimary, BackgroundTransparency = 0.2 }):Play()
-        end)
-        btn.MouseLeave:Connect(function()
-            TweenService:Create(btn, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.ObsidianElevated, BackgroundTransparency = 0.4 }):Play()
-        end)
-        btn.MouseButton1Click:Connect(callback or function() end)
-        btn.Parent = UtilGrid
-        return btn
-    end
-
-    -- Standard-Buttons
-    Window:AddUtilButton("Discord", Library.Icons.Discord, function()
-        local discord = config.DiscordLink or "https://discord.gg/sepx"
-        Library:SetClipboard(discord)
-        Library:Notify("Discord Kopiert", discord .. " kopiert!", true)
-    end)
-
-    Window:AddUtilButton("Copy HWID", Library.Icons.Copy, function()
-        local hwid = Library:GetHWID()
-        Library:SetClipboard(hwid)
-        Library:Notify("HWID Kopiert", "HWID kopiert!", true)
-    end)
-
-    Window:AddUtilButton("Config", Library.Icons.Settings, function()
-        Library:Notify("Config", "Settings geladen.", true)
-    end)
-
-    local EngineStatusBanner = create("Frame", {
-        Name = "EngineStatusBanner",
-        Size = UDim2.new(1, 0, 0, 32),
-        Position = UDim2.new(0, 0, 1, -32),
-        BackgroundColor3 = Color3.fromRGB(14, 22, 30),
-        BackgroundTransparency = 0.35,
-        ZIndex = 7
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 8) }),
-        create("Frame", {
-            Name = "StatusDot",
-            Size = UDim2.new(0, 7, 0, 7),
-            Position = UDim2.new(0, 12, 0.5, -3.5),
-            BackgroundColor3 = Library.Theme.StatusGreen,
-            ZIndex = 8
+        -- Tab Sidebar Button
+        local TabBtn = create("TextButton", {
+            Name = "TabBtn_" .. tabName,
+            Size = UDim2.new(1, 0, 0, 36),
+            BackgroundColor3 = Library.Theme.ObsidianElevated,
+            BackgroundTransparency = 0.7,
+            AutoButtonColor = false,
+            Text = "",
+            ZIndex = 7
         }, {
-            create("UICorner", { CornerRadius = UDim.new(1, 0) })
-        }),
-        create("TextLabel", {
-            Size = UDim2.new(1, -30, 1, 0),
-            Position = UDim2.new(0, 26, 0, 0),
-            BackgroundTransparency = 1,
-            Font = Library.Theme.FontMedium,
-            Text = Title .. " • " .. Library:GetExecutor() .. " • System Ready",
-            TextColor3 = Library.Theme.GoldPrimary,
-            TextSize = 10,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 8
-        })
-    })
-    addDualToneStroke(EngineStatusBanner, 1, 0.5, false)
-    EngineStatusBanner.Parent = LeftColumn
-
-    -- Rechte Spalte (Profil & Live Telemetrie)
-    local RightColumn = create("Frame", {
-        Name = "RightColumn",
-        Size = UDim2.new(0.45, -8, 1, 0),
-        Position = UDim2.new(0.55, 8, 0, 0),
-        BackgroundTransparency = 1,
-        ZIndex = 6
-    }, {
-        create("UIListLayout", {
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 10)
-        })
-    })
-    RightColumn.Parent = DashboardGrid
-
-    local ProfileContextCard = create("Frame", {
-        Name = "ProfileContextCard",
-        Size = UDim2.new(1, 0, 0, 242),
-        BackgroundColor3 = Library.Theme.ObsidianCard,
-        BackgroundTransparency = 0.4,
-        LayoutOrder = 1,
-        ZIndex = 7
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 16) }),
-        create("UIPadding", {
-            PaddingTop = UDim.new(0, 12),
-            PaddingBottom = UDim.new(0, 12),
-            PaddingLeft = UDim.new(0, 12),
-            PaddingRight = UDim.new(0, 12)
-        })
-    })
-    addDualToneStroke(ProfileContextCard, 1.1, 0.4, false)
-    ProfileContextCard.Parent = RightColumn
-
-    local ProfileHeader = create("Frame", {
-        Name = "ProfileHeader",
-        Size = UDim2.new(1, 0, 0, 44),
-        BackgroundTransparency = 1,
-        ZIndex = 8
-    }, {
-        create("Frame", {
-            Name = "AvatarContainer",
-            Size = UDim2.new(0, 44, 0, 44),
-            BackgroundColor3 = Color3.fromRGB(24, 32, 46),
-            BackgroundTransparency = 0.2,
-            ZIndex = 8
-        }, {
-            create("UICorner", { CornerRadius = UDim.new(1, 0) }),
+            create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+            create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8) }),
             create("ImageLabel", {
-                Size = UDim2.new(1, -4, 1, -4),
-                AnchorPoint = Vector2.new(0.5, 0.5),
-                Position = UDim2.new(0.5, 0, 0.5, 0),
+                Name = "TabIcon",
+                Size = UDim2.new(0, 16, 0, 16),
+                Position = UDim2.new(0, 0, 0.5, -8),
                 BackgroundTransparency = 1,
-                Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150",
+                Image = tabIcon,
+                ImageColor3 = Library.Theme.TextSecondary,
+                ZIndex = 8
+            }),
+            create("TextLabel", {
+                Name = "TabLabel",
+                Size = UDim2.new(1, -26, 1, 0),
+                Position = UDim2.new(0, 26, 0, 0),
+                BackgroundTransparency = 1,
+                Font = Library.Theme.FontMedium,
+                Text = tabName,
+                TextColor3 = Library.Theme.TextSecondary,
+                TextSize = 11.5,
+                TextTruncate = Enum.TextTruncate.AtEnd,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 8
+            })
+        })
+        addDualToneStroke(TabBtn, 1, 0.8, false)
+        TabBtn.Parent = TabSidebar
+        Tab.Button = TabBtn
+
+        local function activateTab()
+            for _, otherTab in pairs(Window.Tabs) do
+                otherTab.Page.Visible = false
+                TweenService:Create(otherTab.Button, TweenInfo.new(0.2), {
+                    BackgroundColor3 = Library.Theme.ObsidianElevated,
+                    BackgroundTransparency = 0.7
+                }):Play()
+                local lbl = otherTab.Button:FindFirstChild("TabLabel")
+                local ico = otherTab.Button:FindFirstChild("TabIcon")
+                if lbl then lbl.TextColor3 = Library.Theme.TextSecondary end
+                if ico then ico.ImageColor3 = Library.Theme.TextSecondary end
+            end
+
+            TabPage.Visible = true
+            Window.ActiveTab = Tab
+            TweenService:Create(TabBtn, TweenInfo.new(0.2), {
+                BackgroundColor3 = Library.Theme.ObsidianElevated,
+                BackgroundTransparency = 0.15
+            }):Play()
+            local lbl = TabBtn:FindFirstChild("TabLabel")
+            local ico = TabBtn:FindFirstChild("TabIcon")
+            if lbl then lbl.TextColor3 = Library.Theme.GoldLight end
+            if ico then ico.ImageColor3 = Library.Theme.GoldPrimary end
+        end
+
+        TabBtn.MouseButton1Click:Connect(activateTab)
+
+        table.insert(Window.Tabs, Tab)
+        if #Window.Tabs == 1 then
+            activateTab()
+        end
+
+        -- ============================================================
+        -- TAB ELEMENTE (Orion-Style API)
+        -- ============================================================
+
+        -- 1. SECTION
+        function Tab:AddSection(secConfig)
+            local title = type(secConfig) == "table" and (secConfig.Name or secConfig.Title) or tostring(secConfig or "Section")
+            local sectionFrame = create("Frame", {
+                Name = "Section_" .. title,
+                Size = UDim2.new(1, 0, 0, 24),
+                BackgroundTransparency = 1,
+                ZIndex = 8
+            }, {
+                create("TextLabel", {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontBold,
+                    Text = string.upper(title),
+                    TextColor3 = Library.Theme.GoldPrimary,
+                    TextSize = 10.5,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                })
+            })
+            sectionFrame.Parent = TabPage
+            return sectionFrame
+        end
+
+        -- 2. BUTTON
+        function Tab:AddButton(btnConfig)
+            btnConfig = btnConfig or {}
+            local btnName = btnConfig.Name or btnConfig.Title or "Button"
+            local callback = btnConfig.Callback or function() end
+
+            local btnCard = create("TextButton", {
+                Name = "BtnCard_" .. btnName,
+                Size = UDim2.new(1, 0, 0, 38),
+                BackgroundColor3 = Library.Theme.ObsidianCard,
+                BackgroundTransparency = 0.35,
+                AutoButtonColor = false,
+                Text = "",
+                ZIndex = 8
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+                create("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }),
+                create("TextLabel", {
+                    Size = UDim2.new(1, -30, 1, 0),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontMedium,
+                    Text = btnName,
+                    TextColor3 = Library.Theme.TextWhite,
+                    TextSize = 11.5,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                }),
+                create("ImageLabel", {
+                    Size = UDim2.new(0, 14, 0, 14),
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    Position = UDim2.new(1, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    Image = Library.Icons.Sparkle,
+                    ImageColor3 = Library.Theme.GoldPrimary,
+                    ZIndex = 9
+                })
+            })
+            addDualToneStroke(btnCard, 1, 0.5, false)
+            btnCard.Parent = TabPage
+
+            btnCard.MouseEnter:Connect(function()
+                TweenService:Create(btnCard, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.ObsidianElevated, BackgroundTransparency = 0.15 }):Play()
+            end)
+            btnCard.MouseLeave:Connect(function()
+                TweenService:Create(btnCard, TweenInfo.new(0.18), { BackgroundColor3 = Library.Theme.ObsidianCard, BackgroundTransparency = 0.35 }):Play()
+            end)
+            btnCard.MouseButton1Click:Connect(function()
+                callback()
+            end)
+
+            return {
+                Set = function(self, newText)
+                    local lbl = btnCard:FindFirstChildOfClass("TextLabel")
+                    if lbl then lbl.Text = tostring(newText) end
+                end
+            }
+        end
+
+        -- 3. TOGGLE
+        function Tab:AddToggle(togConfig)
+            togConfig = togConfig or {}
+            local togName = togConfig.Name or togConfig.Title or "Toggle"
+            local state = (togConfig.Default == true)
+            local callback = togConfig.Callback or function(val) end
+
+            local togCard = create("TextButton", {
+                Name = "TogCard_" .. togName,
+                Size = UDim2.new(1, 0, 0, 38),
+                BackgroundColor3 = Library.Theme.ObsidianCard,
+                BackgroundTransparency = 0.35,
+                AutoButtonColor = false,
+                Text = "",
+                ZIndex = 8
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+                create("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }),
+                create("TextLabel", {
+                    Size = UDim2.new(1, -60, 1, 0),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontMedium,
+                    Text = togName,
+                    TextColor3 = Library.Theme.TextWhite,
+                    TextSize = 11.5,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                })
+            })
+            addDualToneStroke(togCard, 1, 0.5, false)
+            togCard.Parent = TabPage
+
+            local switchBg = create("Frame", {
+                Name = "SwitchBg",
+                Size = UDim2.new(0, 40, 0, 20),
+                AnchorPoint = Vector2.new(1, 0.5),
+                Position = UDim2.new(1, 0, 0.5, 0),
+                BackgroundColor3 = state and Library.Theme.GoldPrimary or Color3.fromRGB(28, 36, 48),
                 ZIndex = 9
             }, {
                 create("UICorner", { CornerRadius = UDim.new(1, 0) })
             })
-        })
-    }),
-    create("Frame", {
-        Name = "IdentityTextGroup",
-        Size = UDim2.new(1, -54, 1, 0),
-        Position = UDim2.new(0, 54, 0, 0),
-        BackgroundTransparency = 1,
-        ZIndex = 8
-    }, {
-        create("TextLabel", {
-            Size = UDim2.new(1, -65, 0, 18),
-            Position = UDim2.new(0, 0, 0, 2),
-            BackgroundTransparency = 1,
-            Font = Library.Theme.FontBold,
-            Text = LocalPlayer.DisplayName or "User",
-            TextColor3 = Library.Theme.TextWhite,
-            TextSize = 13.5,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 9
-        }),
-        create("TextLabel", {
-            Size = UDim2.new(1, -65, 0, 14),
-            Position = UDim2.new(0, 0, 0, 20),
-            BackgroundTransparency = 1,
-            Font = Library.Theme.FontRegular,
-            Text = "@" .. (LocalPlayer.Name or "player"),
-            TextColor3 = Library.Theme.TextSecondary,
-            TextSize = 10.5,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 9
-        }),
-        create("Frame", {
-            Name = "VerifiedPill",
-            Size = UDim2.new(0, 68, 0, 18),
-            Position = UDim2.new(1, -68, 0, 2),
-            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-            BackgroundTransparency = 0.2,
-            ZIndex = 9
-        }, {
-            create("UICorner", { CornerRadius = UDim.new(0, 6) }),
-            create("TextLabel", {
+            switchBg.Parent = togCard
+
+            local switchKnob = create("Frame", {
+                Name = "Knob",
+                Size = UDim2.new(0, 16, 0, 16),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Position = state and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
+                BackgroundColor3 = state and Library.Theme.TextDarkButton or Color3.fromRGB(200, 210, 225),
+                ZIndex = 10
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(1, 0) })
+            })
+            switchKnob.Parent = switchBg
+
+            local function updateToggle(newState)
+                state = newState
+                TweenService:Create(switchBg, TweenInfo.new(0.2), {
+                    BackgroundColor3 = state and Library.Theme.GoldPrimary or Color3.fromRGB(28, 36, 48)
+                }):Play()
+                TweenService:Create(switchKnob, TweenInfo.new(0.2), {
+                    Position = state and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
+                    BackgroundColor3 = state and Library.Theme.TextDarkButton or Color3.fromRGB(200, 210, 225)
+                }):Play()
+                pcall(callback, state)
+            end
+
+            togCard.MouseButton1Click:Connect(function()
+                updateToggle(not state)
+            end)
+
+            return {
+                Set = function(self, newVal)
+                    updateToggle(newVal)
+                end,
+                Value = state
+            }
+        end
+
+        -- 4. SLIDER
+        function Tab:AddSlider(sldConfig)
+            sldConfig = sldConfig or {}
+            local sldName = sldConfig.Name or sldConfig.Title or "Slider"
+            local min = sldConfig.Min or 0
+            local max = sldConfig.Max or 100
+            local default = sldConfig.Default or min
+            local increment = sldConfig.Increment or 1
+            local valueName = sldConfig.ValueName or ""
+            local callback = sldConfig.Callback or function(val) end
+
+            local currentVal = math.clamp(default, min, max)
+
+            local sldCard = create("Frame", {
+                Name = "SldCard_" .. sldName,
+                Size = UDim2.new(1, 0, 0, 52),
+                BackgroundColor3 = Library.Theme.ObsidianCard,
+                BackgroundTransparency = 0.35,
+                ZIndex = 8
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+                create("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8) }),
+                create("TextLabel", {
+                    Size = UDim2.new(0.7, 0, 0, 16),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontMedium,
+                    Text = sldName,
+                    TextColor3 = Library.Theme.TextWhite,
+                    TextSize = 11.5,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                })
+            })
+            addDualToneStroke(sldCard, 1, 0.5, false)
+            sldCard.Parent = TabPage
+
+            local valLabel = create("TextLabel", {
+                Size = UDim2.new(0.3, 0, 0, 16),
+                Position = UDim2.new(0.7, 0, 0, 0),
+                BackgroundTransparency = 1,
+                Font = Library.Theme.FontBold,
+                Text = tostring(currentVal) .. valueName,
+                TextColor3 = Library.Theme.GoldPrimary,
+                TextSize = 11,
+                TextXAlignment = Enum.TextXAlignment.Right,
+                ZIndex = 9
+            })
+            valLabel.Parent = sldCard
+
+            local trackBar = create("Frame", {
+                Name = "Track",
+                Size = UDim2.new(1, 0, 0, 6),
+                Position = UDim2.new(0, 0, 1, -8),
+                BackgroundColor3 = Color3.fromRGB(24, 32, 46),
+                ZIndex = 9
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(1, 0) })
+            })
+            trackBar.Parent = sldCard
+
+            local fillBar = create("Frame", {
+                Name = "Fill",
+                Size = UDim2.new((currentVal - min) / (max - min), 0, 1, 0),
+                BackgroundColor3 = Library.Theme.GoldPrimary,
+                ZIndex = 10
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(1, 0) }),
+                create("UIGradient", {
+                    Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0, Library.Theme.GoldLight),
+                        ColorSequenceKeypoint.new(1, Library.Theme.GoldPrimary)
+                    })
+                })
+            })
+            fillBar.Parent = trackBar
+
+            local sldDragging = false
+
+            local function updateSlider(input)
+                local pos = math.clamp((input.Position.X - trackBar.AbsolutePosition.X) / trackBar.AbsoluteSize.X, 0, 1)
+                local rawVal = min + (max - min) * pos
+                local steppedVal = math.floor(rawVal / increment + 0.5) * increment
+                steppedVal = math.clamp(steppedVal, min, max)
+
+                currentVal = steppedVal
+                valLabel.Text = tostring(currentVal) .. valueName
+                TweenService:Create(fillBar, TweenInfo.new(0.05, Enum.EasingStyle.Linear), {
+                    Size = UDim2.new((currentVal - min) / (max - min), 0, 1, 0)
+                }):Play()
+
+                pcall(callback, currentVal)
+            end
+
+            trackBar.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    sldDragging = true
+                    updateSlider(input)
+                end
+            end)
+
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    sldDragging = false
+                end
+            end)
+
+            UserInputService.InputChanged:Connect(function(input)
+                if sldDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    updateSlider(input)
+                end
+            end)
+
+            return {
+                Set = function(self, newVal)
+                    currentVal = math.clamp(newVal, min, max)
+                    valLabel.Text = tostring(currentVal) .. valueName
+                    fillBar.Size = UDim2.new((currentVal - min) / (max - min), 0, 1, 0)
+                    pcall(callback, currentVal)
+                end,
+                Value = currentVal
+            }
+        end
+
+        -- 5. DROPDOWN
+        function Tab:AddDropdown(ddConfig)
+            ddConfig = ddConfig or {}
+            local ddName = ddConfig.Name or ddConfig.Title or "Dropdown"
+            local options = ddConfig.Options or {}
+            local default = ddConfig.Default or options[1] or ""
+            local callback = ddConfig.Callback or function(val) end
+
+            local currentOption = default
+            local isExpanded = false
+
+            local ddCard = create("Frame", {
+                Name = "DDCard_" .. ddName,
+                Size = UDim2.new(1, 0, 0, 38),
+                BackgroundColor3 = Library.Theme.ObsidianCard,
+                BackgroundTransparency = 0.35,
+                ClipsDescendants = true,
+                ZIndex = 8
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 10) })
+            })
+            addDualToneStroke(ddCard, 1, 0.5, false)
+            ddCard.Parent = TabPage
+
+            local headerBtn = create("TextButton", {
+                Name = "Header",
+                Size = UDim2.new(1, 0, 0, 38),
+                BackgroundTransparency = 1,
+                Text = "",
+                ZIndex = 9
+            }, {
+                create("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }),
+                create("TextLabel", {
+                    Size = UDim2.new(0.5, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontMedium,
+                    Text = ddName,
+                    TextColor3 = Library.Theme.TextWhite,
+                    TextSize = 11.5,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 10
+                }),
+                create("TextLabel", {
+                    Name = "SelectedLabel",
+                    Size = UDim2.new(0.5, -24, 1, 0),
+                    Position = UDim2.new(0.5, 0, 0, 0),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontBold,
+                    Text = tostring(currentOption),
+                    TextColor3 = Library.Theme.GoldPrimary,
+                    TextSize = 11,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
+                    TextXAlignment = Enum.TextXAlignment.Right,
+                    ZIndex = 10
+                }),
+                create("ImageLabel", {
+                    Name = "Chevron",
+                    Size = UDim2.new(0, 14, 0, 14),
+                    AnchorPoint = Vector2.new(1, 0.5),
+                    Position = UDim2.new(1, 0, 0.5, 0),
+                    BackgroundTransparency = 1,
+                    Image = Library.Icons.ChevronDown,
+                    ImageColor3 = Library.Theme.TextSecondary,
+                    ZIndex = 10
+                })
+            })
+            headerBtn.Parent = ddCard
+
+            local optionList = create("Frame", {
+                Name = "OptionList",
+                Size = UDim2.new(1, -16, 0, 0),
+                Position = UDim2.new(0, 8, 0, 42),
+                BackgroundTransparency = 1,
+                ZIndex = 9
+            }, {
+                create("UIListLayout", {
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    Padding = UDim.new(0, 4)
+                })
+            })
+            optionList.Parent = ddCard
+
+            local function renderOptions()
+                for _, child in ipairs(optionList:GetChildren()) do
+                    if child:IsA("TextButton") then child:Destroy() end
+                end
+
+                for idx, opt in ipairs(options) do
+                    local optBtn = create("TextButton", {
+                        Name = "Opt_" .. tostring(opt),
+                        Size = UDim2.new(1, 0, 0, 28),
+                        BackgroundColor3 = (opt == currentOption) and Library.Theme.PetrolDark or Library.Theme.InputDark,
+                        BackgroundTransparency = 0.3,
+                        AutoButtonColor = false,
+                        Text = "",
+                        LayoutOrder = idx,
+                        ZIndex = 10
+                    }, {
+                        create("UICorner", { CornerRadius = UDim.new(0, 6) }),
+                        create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) }),
+                        create("TextLabel", {
+                            Size = UDim2.new(1, 0, 1, 0),
+                            BackgroundTransparency = 1,
+                            Font = (opt == currentOption) and Library.Theme.FontBold or Library.Theme.FontRegular,
+                            Text = tostring(opt),
+                            TextColor3 = (opt == currentOption) and Library.Theme.GoldLight or Library.Theme.TextBody,
+                            TextSize = 10.5,
+                            TextXAlignment = Enum.TextXAlignment.Left,
+                            ZIndex = 11
+                        })
+                    })
+                    optBtn.Parent = optionList
+
+                    optBtn.MouseButton1Click:Connect(function()
+                        currentOption = opt
+                        local selLbl = headerBtn:FindFirstChild("SelectedLabel")
+                        if selLbl then selLbl.Text = tostring(currentOption) end
+                        
+                        isExpanded = false
+                        TweenService:Create(ddCard, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                            Size = UDim2.new(1, 0, 0, 38)
+                        }):Play()
+                        renderOptions()
+                        pcall(callback, currentOption)
+                    end)
+                end
+            end
+
+            renderOptions()
+
+            headerBtn.MouseButton1Click:Connect(function()
+                isExpanded = not isExpanded
+                local targetHeight = isExpanded and (44 + #options * 32) or 38
+                local chevron = headerBtn:FindFirstChild("Chevron")
+                if chevron then
+                    TweenService:Create(chevron, TweenInfo.new(0.2), {
+                        Rotation = isExpanded and 180 or 0
+                    }):Play()
+                end
+                TweenService:Create(ddCard, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(1, 0, 0, targetHeight)
+                }):Play()
+            end)
+
+            return {
+                Set = function(self, newVal)
+                    currentOption = newVal
+                    local selLbl = headerBtn:FindFirstChild("SelectedLabel")
+                    if selLbl then selLbl.Text = tostring(currentOption) end
+                    renderOptions()
+                    pcall(callback, currentOption)
+                end,
+                Refresh = function(self, newOpts, clear)
+                    options = newOpts or {}
+                    if clear then currentOption = options[1] or "" end
+                    local selLbl = headerBtn:FindFirstChild("SelectedLabel")
+                    if selLbl then selLbl.Text = tostring(currentOption) end
+                    renderOptions()
+                end,
+                Value = currentOption
+            }
+        end
+
+        -- 6. TEXTBOX
+        function Tab:AddTextbox(tbConfig)
+            tbConfig = tbConfig or {}
+            local tbName = tbConfig.Name or tbConfig.Title or "Textbox"
+            local default = tbConfig.Default or ""
+            local placeholder = tbConfig.Placeholder or "Enter text..."
+            local clearOnFocus = (tbConfig.TextDisappear == true)
+            local callback = tbConfig.Callback or function(val) end
+
+            local tbCard = create("Frame", {
+                Name = "TBCard_" .. tbName,
+                Size = UDim2.new(1, 0, 0, 42),
+                BackgroundColor3 = Library.Theme.ObsidianCard,
+                BackgroundTransparency = 0.35,
+                ZIndex = 8
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+                create("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }),
+                create("TextLabel", {
+                    Size = UDim2.new(0.45, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontMedium,
+                    Text = tbName,
+                    TextColor3 = Library.Theme.TextWhite,
+                    TextSize = 11.5,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                })
+            })
+            addDualToneStroke(tbCard, 1, 0.5, false)
+            tbCard.Parent = TabPage
+
+            local boxContainer = create("Frame", {
+                Size = UDim2.new(0.55, 0, 0, 28),
+                AnchorPoint = Vector2.new(1, 0.5),
+                Position = UDim2.new(1, 0, 0.5, 0),
+                BackgroundColor3 = Library.Theme.InputDark,
+                BackgroundTransparency = 0.3,
+                ZIndex = 9
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 6) }),
+                create("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) })
+            })
+            boxContainer.Parent = tbCard
+
+            local box = create("TextBox", {
                 Size = UDim2.new(1, 0, 1, 0),
                 BackgroundTransparency = 1,
-                Font = Library.Theme.FontBold,
-                Text = "VERIFIED",
-                TextColor3 = Library.Theme.StatusGreen,
-                TextSize = 8,
-                ZIndex = 10
-            })
-        })
-    })
-    ProfileHeader.Parent = ProfileContextCard
-    addDualToneStroke(ProfileHeader.AvatarContainer, 1.2, 0.3, true)
-
-    local ProfileDivider = create("Frame", {
-        Name = "ProfileDivider",
-        Size = UDim2.new(1, 0, 0, 1),
-        Position = UDim2.new(0, 0, 0, 52),
-        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-        BackgroundTransparency = 0.88,
-        BorderSizePixel = 0,
-        ZIndex = 8
-    })
-    ProfileDivider.Parent = ProfileContextCard
-
-    local TelemetryList = create("Frame", {
-        Name = "TelemetryList",
-        Size = UDim2.new(1, 0, 0, 160),
-        Position = UDim2.new(0, 0, 0, 58),
-        BackgroundTransparency = 1,
-        ZIndex = 8
-    }, {
-        create("UIListLayout", {
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Padding = UDim.new(0, 5)
-        })
-    })
-    TelemetryList.Parent = ProfileContextCard
-
-    function Window:AddTelemetryRow(label, value, icon, valColor)
-        local count = #TelemetryList:GetChildren()
-        local row = create("Frame", {
-            Name = "Row_" .. label,
-            Size = UDim2.new(1, 0, 0, 26),
-            BackgroundColor3 = Library.Theme.InputDark,
-            BackgroundTransparency = 0.4,
-            LayoutOrder = count + 1,
-            ZIndex = 9
-        }, {
-            create("UICorner", { CornerRadius = UDim.new(0, 6) }),
-            create("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
-            create("ImageLabel", {
-                Size = UDim2.new(0, 12, 0, 12),
-                Position = UDim2.new(0, 0, 0.5, -6),
-                BackgroundTransparency = 1,
-                Image = icon or Library.Icons.Sparkle,
-                ImageColor3 = Library.Theme.GoldPrimary,
-                ZIndex = 10
-            }),
-            create("TextLabel", {
-                Size = UDim2.new(0.38, -16, 1, 0),
-                Position = UDim2.new(0, 16, 0, 0),
-                BackgroundTransparency = 1,
-                Font = Library.Theme.FontMedium,
-                Text = label .. ":",
-                TextColor3 = Library.Theme.TextSecondary,
-                TextSize = 10,
+                Font = Library.Theme.FontRegular,
+                PlaceholderText = placeholder,
+                PlaceholderColor3 = Library.Theme.TextMuted,
+                Text = default,
+                TextColor3 = Library.Theme.GoldLight,
+                TextSize = 10.5,
                 TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 10
-            }),
-            create("TextLabel", {
-                Name = "ValueLabel",
-                Size = UDim2.new(0.62, 0, 1, 0),
-                Position = UDim2.new(0.38, 0, 0, 0),
-                BackgroundTransparency = 1,
-                Font = Library.Theme.FontBold,
-                Text = value,
-                TextColor3 = valColor or Library.Theme.TextWhite,
-                TextSize = 10,
-                TextTruncate = Enum.TextTruncate.AtEnd,
-                TextXAlignment = Enum.TextXAlignment.Right,
+                ClearTextOnFocus = clearOnFocus,
                 ZIndex = 10
             })
-        })
-        addDualToneStroke(row, 0.9, 0.6, false)
-        row.Parent = TelemetryList
-        Window._telemetryRows[label] = row
-        return row
-    end
+            box.Parent = boxContainer
 
-    function Window:UpdateTelemetry(label, newValue)
-        local row = Window._telemetryRows[label]
-        if row then
-            local valLabel = row:FindFirstChild("ValueLabel")
-            if valLabel then
-                valLabel.Text = tostring(newValue)
-            end
+            box.FocusLost:Connect(function()
+                pcall(callback, box.Text)
+            end)
+
+            return {
+                Set = function(self, newVal)
+                    box.Text = tostring(newVal)
+                    pcall(callback, box.Text)
+                end,
+                Value = box.Text
+            }
         end
-    end
 
-    -- Standard Telemetriezeilen
-    Window:AddTelemetryRow("Game Name", currentGameTitle, Library.Icons.Gamepad, Library.Theme.TextWhite)
-    Window:AddTelemetryRow("Game ID", currentGameId, Library.Icons.Sparkle, Library.Theme.GoldLight)
-    Window:AddTelemetryRow("Place ID", currentPlaceId, Library.Icons.External, Library.Theme.GoldPrimary)
-    Window:AddTelemetryRow("Gerät", Library:GetDeviceType(), Library.Icons.Device, Library.Theme.TextBody)
-    Window:AddTelemetryRow("Executor", Library:GetExecutor(), Library.Icons.Code, Library.Theme.StatusGreen)
+        -- 7. KEYBIND
+        function Tab:AddBind(bindConfig)
+            bindConfig = bindConfig or {}
+            local bindName = bindConfig.Name or bindConfig.Title or "Keybind"
+            local default = bindConfig.Default or Enum.KeyCode.E
+            local callback = bindConfig.Callback or function() end
 
-    -- VIP Card
-    local VipCard = create("Frame", {
-        Name = "VipCard",
-        Size = UDim2.new(1, 0, 1, -252),
-        BackgroundColor3 = Library.Theme.ObsidianCard,
-        BackgroundTransparency = 0.4,
-        LayoutOrder = 2,
-        ZIndex = 7
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 16) }),
-        create("UIPadding", {
-            PaddingTop = UDim.new(0, 12),
-            PaddingBottom = UDim.new(0, 12),
-            PaddingLeft = UDim.new(0, 12),
-            PaddingRight = UDim.new(0, 12)
-        })
-    })
-    addDualToneStroke(VipCard, 1.1, 0.35, true)
-    VipCard.Parent = RightColumn
+            local currentKey = default
+            local isListening = false
 
-    local VipHeader = create("Frame", {
-        Name = "VipHeader",
-        Size = UDim2.new(1, 0, 0, 24),
-        BackgroundTransparency = 1,
-        ZIndex = 8
-    }, {
-        create("Frame", {
-            Name = "VipBadge",
-            Size = UDim2.new(0, 60, 0, 18),
-            BackgroundColor3 = Color3.fromRGB(48, 36, 20),
-            BackgroundTransparency = 0.2,
-            ZIndex = 8
-        }, {
-            create("UICorner", { CornerRadius = UDim.new(0, 8) }),
-            create("UIListLayout", {
-                FillDirection = Enum.FillDirection.Horizontal,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Center,
-                Padding = UDim.new(0, 4)
-            }),
-            create("ImageLabel", {
-                Size = UDim2.new(0, 11, 0, 11),
-                BackgroundTransparency = 1,
-                Image = Library.Icons.Crown,
-                ImageColor3 = Library.Theme.GoldLight,
-                ZIndex = 9
-            }),
-            create("TextLabel", {
-                Size = UDim2.new(0, 0, 1, 0),
-                AutomaticSize = Enum.AutomaticSize.X,
-                BackgroundTransparency = 1,
-                Font = Library.Theme.FontBlack,
-                Text = "SEPX+",
-                TextColor3 = Library.Theme.GoldPrimary,
-                TextSize = 9.5,
-                ZIndex = 9
+            local bindCard = create("Frame", {
+                Name = "BindCard_" .. bindName,
+                Size = UDim2.new(1, 0, 0, 38),
+                BackgroundColor3 = Library.Theme.ObsidianCard,
+                BackgroundTransparency = 0.35,
+                ZIndex = 8
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+                create("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14) }),
+                create("TextLabel", {
+                    Size = UDim2.new(1, -80, 1, 0),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontMedium,
+                    Text = bindName,
+                    TextColor3 = Library.Theme.TextWhite,
+                    TextSize = 11.5,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                })
             })
-        }),
-        create("TextLabel", {
-            Size = UDim2.new(1, -70, 1, 0),
-            Position = UDim2.new(0, 70, 0, -2),
-            BackgroundTransparency = 1,
-            Font = Library.Theme.FontBold,
-            Text = "VIP Elite Access",
-            TextColor3 = Library.Theme.TextWhite,
-            TextSize = 12,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 8
-        })
-    })
-    VipHeader.Parent = VipCard
+            addDualToneStroke(bindCard, 1, 0.5, false)
+            bindCard.Parent = TabPage
 
-    local VipDesc = create("TextLabel", {
-        Name = "VipDesc",
-        Size = UDim2.new(1, 0, 0, 28),
-        Position = UDim2.new(0, 0, 0, 26),
-        BackgroundTransparency = 1,
-        Font = Library.Theme.FontRegular,
-        Text = "Unlock 0-day scripts, instant bypass & dedicated support.",
-        TextColor3 = Library.Theme.TextSecondary,
-        TextSize = 9.5,
-        TextWrapped = true,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 8
-    })
-    VipDesc.Parent = VipCard
-
-    local UpgradeBtn = create("TextButton", {
-        Name = "UpgradeBtn",
-        Size = UDim2.new(1, 0, 0, 32),
-        Position = UDim2.new(0, 0, 1, -32),
-        BackgroundColor3 = Library.Theme.GoldPrimary,
-        AutoButtonColor = false,
-        Text = "",
-        ZIndex = 8
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 8) }),
-        create("UIGradient", {
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Library.Theme.GoldLight),
-                ColorSequenceKeypoint.new(0.5, Library.Theme.GoldPrimary),
-                ColorSequenceKeypoint.new(1, Library.Theme.GoldDark)
-            }),
-            Rotation = 45
-        }),
-        create("Frame", {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 1,
-            ZIndex = 9
-        }, {
-            create("UIListLayout", {
-                FillDirection = Enum.FillDirection.Horizontal,
-                HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                VerticalAlignment = Enum.VerticalAlignment.Center,
-                Padding = UDim.new(0, 6)
-            }),
-            create("ImageLabel", {
-                Size = UDim2.new(0, 12, 0, 12),
-                BackgroundTransparency = 1,
-                Image = Library.Icons.External,
-                ImageColor3 = Library.Theme.TextDarkButton,
-                ZIndex = 10
-            }),
-            create("TextLabel", {
-                Size = UDim2.new(0, 0, 1, 0),
-                AutomaticSize = Enum.AutomaticSize.X,
-                BackgroundTransparency = 1,
+            local bindBtn = create("TextButton", {
+                Size = UDim2.new(0, 68, 0, 24),
+                AnchorPoint = Vector2.new(1, 0.5),
+                Position = UDim2.new(1, 0, 0.5, 0),
+                BackgroundColor3 = Library.Theme.InputDark,
+                BackgroundTransparency = 0.3,
                 Font = Library.Theme.FontBold,
-                Text = "UPGRADE TO SEPX+",
-                TextColor3 = Library.Theme.TextDarkButton,
+                Text = currentKey.Name,
+                TextColor3 = Library.Theme.GoldPrimary,
                 TextSize = 10,
-                ZIndex = 10
+                AutoButtonColor = false,
+                ZIndex = 9
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 6) })
             })
-        })
-    })
-    UpgradeBtn.Parent = VipCard
+            bindBtn.Parent = bindCard
 
-    UpgradeBtn.MouseButton1Click:Connect(function()
-        local pricing = config.PricingLink or "https://sepx.cc/pricing"
-        Library:SetClipboard(pricing)
-        Library:Notify("Link Kopiert", pricing .. " kopiert!", true)
-    end)
+            bindBtn.MouseButton1Click:Connect(function()
+                isListening = true
+                bindBtn.Text = "..."
+                bindBtn.TextColor3 = Library.Theme.StatusGreen
+            end)
 
-    -- Window Methods
-    function Window:OnRedeem(callback)
-        Window._onRedeemCallback = callback
+            UserInputService.InputBegan:Connect(function(input, gpe)
+                if isListening and not gpe then
+                    if input.UserInputType == Enum.UserInputType.Keyboard then
+                        currentKey = input.KeyCode
+                        bindBtn.Text = currentKey.Name
+                        bindBtn.TextColor3 = Library.Theme.GoldPrimary
+                        isListening = false
+                    end
+                elseif not gpe and input.KeyCode == currentKey then
+                    pcall(callback)
+                end
+            end)
+
+            return {
+                Set = function(self, newKey)
+                    currentKey = newKey
+                    bindBtn.Text = currentKey.Name
+                end,
+                Value = currentKey
+            }
+        end
+
+        -- 8. PARAGRAPH
+        function Tab:AddParagraph(pConfig)
+            pConfig = pConfig or {}
+            local pTitle = pConfig.Title or pConfig.Name or "Info"
+            local pContent = pConfig.Content or pConfig.Text or ""
+
+            local pCard = create("Frame", {
+                Name = "PCard_" .. pTitle,
+                Size = UDim2.new(1, 0, 0, 54),
+                BackgroundColor3 = Library.Theme.ObsidianCard,
+                BackgroundTransparency = 0.45,
+                ZIndex = 8
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+                create("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8) }),
+                create("TextLabel", {
+                    Name = "Title",
+                    Size = UDim2.new(1, 0, 0, 16),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontBold,
+                    Text = pTitle,
+                    TextColor3 = Library.Theme.GoldPrimary,
+                    TextSize = 11.5,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                }),
+                create("TextLabel", {
+                    Name = "Content",
+                    Size = UDim2.new(1, 0, 0, 24),
+                    Position = UDim2.new(0, 0, 0, 18),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontRegular,
+                    Text = pContent,
+                    TextColor3 = Library.Theme.TextSecondary,
+                    TextSize = 10,
+                    TextWrapped = true,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                })
+            })
+            addDualToneStroke(pCard, 1, 0.6, false)
+            pCard.Parent = TabPage
+
+            return {
+                Set = function(self, newContent)
+                    local cnt = pCard:FindFirstChild("Content")
+                    if cnt then cnt.Text = tostring(newContent) end
+                end
+            }
+        end
+
+        -- 9. LABEL
+        function Tab:AddLabel(labelText)
+            local lblCard = create("Frame", {
+                Name = "LabelCard",
+                Size = UDim2.new(1, 0, 0, 28),
+                BackgroundColor3 = Library.Theme.InputDark,
+                BackgroundTransparency = 0.5,
+                ZIndex = 8
+            }, {
+                create("UICorner", { CornerRadius = UDim.new(0, 8) }),
+                create("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }),
+                create("TextLabel", {
+                    Name = "Text",
+                    Size = UDim2.new(1, 0, 1, 0),
+                    BackgroundTransparency = 1,
+                    Font = Library.Theme.FontMedium,
+                    Text = tostring(labelText),
+                    TextColor3 = Library.Theme.TextBody,
+                    TextSize = 11,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 9
+                })
+            })
+            lblCard.Parent = TabPage
+            return {
+                Set = function(self, newText)
+                    local txt = lblCard:FindFirstChild("Text")
+                    if txt then txt.Text = tostring(newText) end
+                end
+            }
+        end
+
+        return Tab
     end
 
-    function Window:SetKey(keyText)
-        KeyTextBox.Text = tostring(keyText)
-    end
-
-    -- 4-Sekunden Loader Launch
+    -- ================================================================
+    -- 4-SEKUNDEN INTRO LAUNCH SEQUENCE
+    -- ================================================================
     if EnableIntro then
         task.spawn(function()
             local IntroOverlay = create("Frame", {
@@ -1647,11 +1685,11 @@ function Library:CreateWindow(config)
             task.wait(loadTime)
 
             MainFrame.Visible = true
-            MainFrame.Size = UDim2.new(0, 780, 0, 490)
+            MainFrame.Size = UDim2.new(0, 800, 0, 500)
             MainFrame.BackgroundTransparency = 0.7
 
             TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 820, 0, 530),
+                Size = UDim2.new(0, 840, 0, 540),
                 BackgroundTransparency = 0.1
             }):Play()
 
@@ -1670,11 +1708,15 @@ function Library:CreateWindow(config)
             if breathingConn then breathingConn:Disconnect() end
             IntroOverlay:Destroy()
 
-            Library:Notify(Title, "Universal Gateway Initialized. Welcome, " .. (LocalPlayer.DisplayName or "User"), true)
+            Library:Notify({
+                Title = Title,
+                Content = "Universal Hub Initialized. Welcome, " .. (LocalPlayer.DisplayName or "User"),
+                Duration = 3.5
+            })
         end)
     end
 
-    -- Session & Ping Monitor
+    -- Live Session Time & Ping Monitor
     local startTime = tick()
     task.spawn(function()
         local sessionLabel = SessionPill:FindFirstChild("ValText")
@@ -1705,6 +1747,10 @@ function Library:CreateWindow(config)
     end)
 
     return Window
+end
+
+function Library:Init()
+    return true
 end
 
 return Library
