@@ -618,16 +618,16 @@ pcall(function() ScreenGui.ScreenInsets = Enum.ScreenInsets.None end)
 ScreenGui.Parent = ParentContainer
 
 -- ═══════════════════════════════════════════════════════════════════
--- 🔔 BOTTOM-RIGHT TOAST NOTIFICATION SYSTEM (NOVOLINE SAAS STYLE)
+-- 🔔 BOTTOM-RIGHT TOAST NOTIFICATION SYSTEM (NOVOLINE SAAS DESKTOP LOOK)
 -- ═══════════════════════════════════════════════════════════════════
 local NotificationContainer = create("Frame", {
     Name = "NotificationContainer",
-    Size = UDim2.new(0, 330, 1, -40),
-    Position = UDim2.new(1, -20, 1, -20),
+    Size = UDim2.new(0, 360, 1, -40),
+    Position = UDim2.new(1, -24, 1, -24),
     AnchorPoint = Vector2.new(1, 1),
     BackgroundTransparency = 1,
     ClipsDescendants = false,
-    ZIndex = 400,
+    ZIndex = 500,
     Parent = ScreenGui
 }, {
     create("UIListLayout", {
@@ -641,91 +641,86 @@ local NotificationContainer = create("Frame", {
 local function showNotification(title, message, isSuccess, footnote)
     local logoAsset = getSepxLogoAsset()
 
-    -- Icon selection matching the alert
+    -- Determine icon and accent color matching media_1788371387309.png
     local notifIcon = nil
     local iconColor = Color3.fromRGB(255, 255, 255)
+
     if isSuccess == false then
         notifIcon = "rbxassetid://10709790835" -- Alert / Warning Triangle
-        iconColor = Color3.fromRGB(251, 191, 36) -- Warning Amber
+        iconColor = Color3.fromRGB(251, 191, 36) -- Crisp Warning Yellow
     elseif isSuccess == true then
-        notifIcon = logoAsset or Icons.Check
-        iconColor = Theme.VioletLight
+        notifIcon = logoAsset or Icons.Sparkle
+        iconColor = Color3.fromRGB(255, 255, 255)
     else
         notifIcon = logoAsset or Icons.Sparkle
+        iconColor = Color3.fromRGB(255, 255, 255)
     end
+
+    local cardHeight = (footnote and tostring(footnote) ~= "") and 76 or 64
 
     local toast = create("Frame", {
         Name = "ToastCard",
-        Size = UDim2.new(1, 0, 0, footnote and 72 or 60),
-        BackgroundColor3 = Color3.fromRGB(13, 10, 22),
-        BackgroundTransparency = 0.12,
+        Size = UDim2.new(0, 340, 0, cardHeight),
+        BackgroundColor3 = Color3.fromRGB(15, 20, 34),
+        BackgroundTransparency = 0.08,
         ClipsDescendants = true,
-        ZIndex = 401,
+        ZIndex = 501,
         Parent = NotificationContainer
     }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 16) }),
-        create("UIScale", { Name = "ToastScale", Scale = 0.82 }),
-        create("UIPadding", {
-            PaddingLeft = UDim.new(0, 16),
-            PaddingRight = UDim.new(0, 14),
-            PaddingTop = UDim.new(0, 10),
-            PaddingBottom = UDim.new(0, 10)
-        })
+        create("UICorner", { CornerRadius = UDim.new(0, 16) })
     })
-    addDualToneStroke(toast, 1.2, 0.35, true)
 
-    -- Ambient Gradient Glow
+    -- Rich Dark Navy/Violet Gradient Background
     create("UIGradient", {
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 18, 45)),
-            ColorSequenceKeypoint.new(0.55, Color3.fromRGB(15, 11, 24)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 8, 18))
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 28, 48)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(14, 18, 30)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(9, 12, 22))
         }),
-        Rotation = 45,
+        Rotation = 35,
         Parent = toast
     })
 
-    -- Left Icon (Prominent & Clean like in screenshot)
-    local iconHolder = create("Frame", {
-        Name = "IconHolder",
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(0, 0, 0, 4),
-        BackgroundTransparency = 1,
-        ZIndex = 402,
+    -- Subtle Luxury Border
+    create("UIStroke", {
+        Color = (isSuccess == false) and Color3.fromRGB(251, 191, 36) or Color3.fromRGB(75, 70, 130),
+        Transparency = 0.35,
+        Thickness = 1.2,
         Parent = toast
     })
 
+    -- Left Freestanding Icon (28x28, vertically centered)
     if logoAsset and (isSuccess ~= false) then
         create("ImageLabel", {
-            Size = UDim2.new(1, 0, 1, 0),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Name = "ToastIcon",
+            Size = UDim2.new(0, 28, 0, 28),
+            Position = UDim2.new(0, 16, 0.5, -14),
             BackgroundTransparency = 1,
             Image = logoAsset,
             ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 403,
-            Parent = iconHolder
+            ZIndex = 503,
+            Parent = toast
         })
     else
         create("ImageLabel", {
-            Size = UDim2.new(0, 24, 0, 24),
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Name = "ToastIcon",
+            Size = UDim2.new(0, 26, 0, 26),
+            Position = UDim2.new(0, 16, 0.5, -13),
             BackgroundTransparency = 1,
             Image = notifIcon or Icons.Sparkle,
             ImageColor3 = iconColor,
-            ZIndex = 403,
-            Parent = iconHolder
+            ZIndex = 503,
+            Parent = toast
         })
     end
 
-    -- Center Text Group
-    local textGroup = create("Frame", {
-        Name = "TextGroup",
-        Size = UDim2.new(1, -54, 1, 0),
-        Position = UDim2.new(0, 38, 0, 0),
+    -- Center/Right Text Block
+    local textContainer = create("Frame", {
+        Name = "TextContainer",
+        Size = UDim2.new(1, -80, 1, -16),
+        Position = UDim2.new(0, 56, 0, 8),
         BackgroundTransparency = 1,
-        ZIndex = 402,
+        ZIndex = 502,
         Parent = toast
     }, {
         create("UIListLayout", {
@@ -735,71 +730,69 @@ local function showNotification(title, message, isSuccess, footnote)
         }),
         create("TextLabel", {
             Name = "Title",
-            Size = UDim2.new(1, 0, 0, 16),
+            Size = UDim2.new(1, 0, 0, 18),
             BackgroundTransparency = 1,
             Font = Theme.FontBold,
             Text = title or "SecretExploits",
             TextColor3 = Color3.fromRGB(255, 255, 255),
-            TextSize = 13.5,
+            TextSize = 14,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextTruncate = Enum.TextTruncate.AtEnd,
-            ZIndex = 403
+            ZIndex = 503
         }),
         create("TextLabel", {
             Name = "Message",
-            Size = UDim2.new(1, 0, 0, 15),
+            Size = UDim2.new(1, 0, 0, 16),
             BackgroundTransparency = 1,
             Font = Theme.FontMedium,
             Text = message or "",
-            TextColor3 = Color3.fromRGB(195, 200, 225),
-            TextSize = 11.5,
+            TextColor3 = Color3.fromRGB(195, 205, 230),
+            TextSize = 12,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextTruncate = Enum.TextTruncate.AtEnd,
-            ZIndex = 403
+            ZIndex = 503
         })
     })
 
     if footnote and tostring(footnote) ~= "" then
         create("TextLabel", {
             Name = "Footnote",
-            Size = UDim2.new(1, 0, 0, 12),
+            Size = UDim2.new(1, 0, 0, 14),
             BackgroundTransparency = 1,
             Font = Theme.FontRegular,
             Text = tostring(footnote),
-            TextColor3 = Color3.fromRGB(130, 135, 165),
-            TextSize = 10,
+            TextColor3 = Color3.fromRGB(130, 140, 170),
+            TextSize = 10.5,
             TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 403,
-            Parent = textGroup
+            ZIndex = 503,
+            Parent = textContainer
         })
     end
 
-    -- Top-Right Mini Dismiss '✕' Button (matching screenshot)
+    -- Top-Right Mini Dismiss '✕' Button
     local dismissBtn = create("TextButton", {
         Name = "DismissBtn",
-        Size = UDim2.new(0, 18, 0, 18),
-        Position = UDim2.new(1, -2, 0, -2),
+        Size = UDim2.new(0, 22, 0, 22),
+        Position = UDim2.new(1, -8, 0, 6),
         AnchorPoint = Vector2.new(1, 0),
         BackgroundTransparency = 1,
         Font = Theme.FontBold,
         Text = "✕",
-        TextColor3 = Color3.fromRGB(140, 145, 170),
-        TextSize = 10,
+        TextColor3 = Color3.fromRGB(135, 145, 175),
+        TextSize = 11,
         AutoButtonColor = false,
-        ZIndex = 404,
+        ZIndex = 504,
         Parent = toast
     })
 
-    local toastScale = toast:FindFirstChild("ToastScale")
     local isDismissed = false
-
     local function dismissToast()
         if isDismissed then return end
         isDismissed = true
-        if toastScale then
-            TweenService:Create(toastScale, TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 0.001 }):Play()
-        end
-        local tw = TweenService:Create(toast, TweenInfo.new(0.24), { BackgroundTransparency = 1 })
+        local tw = TweenService:Create(toast, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+            Position = UDim2.new(1, 40, 0, 0),
+            BackgroundTransparency = 1
+        })
         tw:Play()
         tw.Completed:Connect(function()
             if toast and toast.Parent then toast:Destroy() end
@@ -810,14 +803,15 @@ local function showNotification(title, message, isSuccess, footnote)
         TweenService:Create(dismissBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(255, 255, 255) }):Play()
     end)
     dismissBtn.MouseLeave:Connect(function()
-        TweenService:Create(dismissBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(140, 145, 170) }):Play()
+        TweenService:Create(dismissBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(135, 145, 175) }):Play()
     end)
     dismissBtn.MouseButton1Click:Connect(dismissToast)
 
-    -- Entrance animation: Spring scale
-    if toastScale then
-        TweenService:Create(toastScale, TweenInfo.new(0.36, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-    end
+    -- Entrance animation: Slides in smoothly from the right
+    toast.Position = UDim2.new(1, 40, 0, 0)
+    TweenService:Create(toast, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0)
+    }):Play()
 
     -- Auto-retract after 4.2s
     task.delay(4.2, function()
@@ -828,17 +822,104 @@ local function showNotification(title, message, isSuccess, footnote)
 end
 
 -- ═══════════════════════════════════════════════════════════════════
--- 🏷️ SECRETEXTPLOITS OVERHEAD NAMETAG SYSTEM (NOVOLINE BILLBOARD STYLE)
+-- 🏷️ SCRIPT-USER ONLY OVERHEAD NAMETAG SYSTEM (NOVOLINE BILLBOARD STYLE)
 -- ═══════════════════════════════════════════════════════════════════
 local activeNametags = {}
 local activeNametagData = {}
 local isNametagsEnabled = false
-local nametagPlayerAddedConn = nil
-local nametagCharAddedConns = {}
-local nametagLoopThread = nil
+local verifiedScriptUsers = {}
 
-local function createPlayerNametag(character, player)
+-- Register LocalPlayer as verified
+verifiedScriptUsers[LocalPlayer.UserId] = true
+verifiedScriptUsers[LocalPlayer.Name] = true
+verifiedScriptUsers[string.lower(LocalPlayer.Name)] = true
+
+-- Multi-Roblox shared memory sync
+pcall(function()
+    getgenv()._SE_ScriptUsers = getgenv()._SE_ScriptUsers or {}
+    getgenv()._SE_ScriptUsers[LocalPlayer.UserId] = true
+    getgenv()._SE_ScriptUsers[LocalPlayer.Name] = true
+end)
+
+local function isPlayerVerifiedScriptUser(player)
+    if not player then return false end
+    if player == LocalPlayer then return true end
+    if verifiedScriptUsers[player.UserId] or verifiedScriptUsers[player.Name] or verifiedScriptUsers[string.lower(player.Name)] then return true end
+    if getgenv()._SE_ScriptUsers and (getgenv()._SE_ScriptUsers[player.UserId] or getgenv()._SE_ScriptUsers[player.Name]) then return true end
+    return false
+end
+
+-- Silent Chat Handshake to detect other players running SecretExploits
+local HANDSHAKE_TOKEN = "\u{200B}\u{200C}SE_ACTIVE\u{200B}"
+local TextChatService = pcall(function() return game:GetService("TextChatService") end) and game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local function broadcastUserPresence()
+    pcall(function()
+        if TextChatService and TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral") then
+            TextChatService.TextChannels.RBXGeneral:SendAsync(HANDSHAKE_TOKEN)
+        elseif ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") then
+            local sayEvent = ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
+            if sayEvent then
+                sayEvent:FireServer(HANDSHAKE_TOKEN, "All")
+            end
+        end
+    end)
+end
+
+local createPlayerNametag -- forward declaration
+
+-- Listen for other SecretExploits users via Chat Handshake
+pcall(function()
+    if TextChatService then
+        TextChatService.MessageReceived:Connect(function(textChatMessage)
+            if string.find(textChatMessage.Text, HANDSHAKE_TOKEN) or string.find(textChatMessage.Text, "SE_ACTIVE") then
+                local senderSource = textChatMessage.TextSource
+                if senderSource then
+                    local p = Players:GetPlayerByUserId(senderSource.UserId)
+                    if p and p ~= LocalPlayer then
+                        verifiedScriptUsers[p.UserId] = true
+                        verifiedScriptUsers[p.Name] = true
+                        if isNametagsEnabled and p.Character then
+                            createPlayerNametag(p.Character, p)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+pcall(function()
+    local chatEvents = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+    if chatEvents then
+        local onMsg = chatEvents:FindFirstChild("OnMessageDoneFiltering")
+        if onMsg then
+            onMsg.OnClientEvent:Connect(function(messageData)
+                local senderName = messageData.FromSpeaker
+                local message = messageData.Message
+                if message and (string.find(message, HANDSHAKE_TOKEN) or string.find(message, "SE_ACTIVE")) then
+                    local p = Players:FindFirstChild(senderName)
+                    if p and p ~= LocalPlayer then
+                        verifiedScriptUsers[p.UserId] = true
+                        verifiedScriptUsers[p.Name] = true
+                        if isNametagsEnabled and p.Character then
+                            createPlayerNametag(p.Character, p)
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+createPlayerNametag = function(character, player)
     if not character then return end
+    -- STRICT CHECK: ONLY verified players running the script get a nametag! (NO dummies/NPCs)
+    if not player or not player:IsA("Player") or not isPlayerVerifiedScriptUser(player) then
+        return
+    end
+
     local head = character:WaitForChild("Head", 3)
     if not head then return end
 
@@ -847,7 +928,7 @@ local function createPlayerNametag(character, player)
     end
 
     local logoAsset = getSepxLogoAsset()
-    local playerName = player and player.Name or (character.Name or "User")
+    local playerName = player.Name
     local playerHandle = "@" .. playerName
 
     local bbg = create("BillboardGui", {
@@ -883,16 +964,32 @@ local function createPlayerNametag(character, player)
     local tagScale = card:FindFirstChild("TagScale")
     local cardStroke = addDualToneStroke(card, 1.2, 0.35, true)
 
-    -- Ambient Smoky Texture
-    create("ImageLabel", {
-        Name = "SmokeOverlay",
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://4996891465",
-        ImageColor3 = Color3.fromRGB(168, 85, 247),
-        ImageTransparency = 0.74,
-        ScaleType = Enum.ScaleType.Crop,
-        ZIndex = 2,
+    -- Seamless UI Matching Background (Official SecretExploits Wallpaper)
+    local bgAsset = getSepxBackgroundAsset()
+    if bgAsset then
+        create("ImageLabel", {
+            Name = "NametagBg",
+            Size = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            Image = bgAsset,
+            ScaleType = Enum.ScaleType.Crop,
+            ImageTransparency = 0.08,
+            ZIndex = 2,
+            Parent = card
+        }, {
+            create("UICorner", { CornerRadius = UDim.new(0, 10) })
+        })
+    end
+
+    -- Ambient Gradient matching UI GlassDeep
+    create("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(28, 20, 52)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(16, 12, 28)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(11, 8, 20))
+        }),
+        Rotation = 45,
         Parent = card
     })
 
@@ -1029,6 +1126,13 @@ local function createPlayerNametag(character, player)
             if cardCorner then
                 TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
             end
+            local bgImg = card:FindFirstChild("NametagBg")
+            if bgImg then
+                local bgCorner = bgImg:FindFirstChildOfClass("UICorner")
+                if bgCorner then
+                    TweenService:Create(bgCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
+                end
+            end
             textContainer.Visible = false
             logoHolder.AnchorPoint = Vector2.new(0.5, 0.5)
             TweenService:Create(logoHolder, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
@@ -1041,7 +1145,14 @@ local function createPlayerNametag(character, player)
                 Size = UDim2.new(0, 156, 0, 38)
             }):Play()
             if cardCorner then
-                TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
+                TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 10) }):Play()
+            end
+            local bgImg = card:FindFirstChild("NametagBg")
+            if bgImg then
+                local bgCorner = bgImg:FindFirstChildOfClass("UICorner")
+                if bgCorner then
+                    TweenService:Create(bgCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 10) }):Play()
+                end
             end
             textContainer.Visible = true
             logoHolder.AnchorPoint = Vector2.new(0, 0.5)
@@ -1070,6 +1181,10 @@ local function createPlayerNametag(character, player)
     return bbg
 end
 
+local nametagPlayerAddedConn = nil
+local nametagCharAddedConns = {}
+local nametagLoopThread = nil
+
 local function toggleNametags(state)
     if state ~= nil then
         isNametagsEnabled = state
@@ -1078,14 +1193,19 @@ local function toggleNametags(state)
     end
 
     if isNametagsEnabled then
+        broadcastUserPresence()
+
+        -- ONLY create nametags for verified script users (including LocalPlayer)
         for _, p in ipairs(Players:GetPlayers()) do
-            if p.Character then
+            if isPlayerVerifiedScriptUser(p) and p.Character then
                 createPlayerNametag(p.Character, p)
             end
             if not nametagCharAddedConns[p] then
                 nametagCharAddedConns[p] = p.CharacterAdded:Connect(function(char)
                     task.wait(0.5)
-                    if isNametagsEnabled then createPlayerNametag(char, p) end
+                    if isNametagsEnabled and isPlayerVerifiedScriptUser(p) then
+                        createPlayerNametag(char, p)
+                    end
                 end)
             end
         end
@@ -1094,7 +1214,9 @@ local function toggleNametags(state)
             nametagPlayerAddedConn = Players.PlayerAdded:Connect(function(p)
                 nametagCharAddedConns[p] = p.CharacterAdded:Connect(function(char)
                     task.wait(0.5)
-                    if isNametagsEnabled then createPlayerNametag(char, p) end
+                    if isNametagsEnabled and isPlayerVerifiedScriptUser(p) then
+                        createPlayerNametag(char, p)
+                    end
                 end)
             end)
         end
@@ -2658,13 +2780,19 @@ closeMainHubUI = function()
     if hubScale then
         TweenService:Create(hubScale, TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 0.001 }):Play()
     end
-    if ProfileCard and ProfileCard.Parent and ProfileCard.Visible then
+
+    -- If Side Profile Card is ON, keep it visible! Only hide if isProfileSideOpen is false:
+    if not isProfileSideOpen and ProfileCard and ProfileCard.Parent and ProfileCard.Visible then
         local profileScale = ProfileCard:FindFirstChildOfClass("UIScale") or create("UIScale", { Scale = 1, Parent = ProfileCard })
         TweenService:Create(profileScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 0.001 }):Play()
+        task.delay(0.25, function()
+            if not isProfileSideOpen and ProfileCard then ProfileCard.Visible = false end
+        end)
     end
-    task.wait(0.25)
-    MainHubWindow.Visible = false
-    if ProfileCard then ProfileCard.Visible = false end
+
+    task.delay(0.25, function()
+        if MainHubWindow then MainHubWindow.Visible = false end
+    end)
 
     -- Reveal Floating Reopen Capsule with smooth spring
     if ReopenCapsule then
@@ -2700,14 +2828,18 @@ openMainHubUI = function()
     TweenService:Create(hubScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 
     if isProfileSideOpen and ProfileCard and ProfileCard.Parent then
-        ProfileCard.Position = profileTargetPos
-        ProfileCard.Size = profileTargetSize
-        ProfileCard.Visible = true
-        local profileScale = ProfileCard:FindFirstChildOfClass("UIScale") or create("UIScale", { Scale = 0.001, Parent = ProfileCard })
-        profileScale.Scale = 0.001
-        task.delay(0.06, function()
-            TweenService:Create(profileScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-        end)
+        local profileScale = ProfileCard:FindFirstChildOfClass("UIScale") or create("UIScale", { Scale = 1, Parent = ProfileCard })
+        if not ProfileCard.Visible or profileScale.Scale < 0.9 then
+            ProfileCard.Position = profileTargetPos
+            ProfileCard.Size = profileTargetSize
+            ProfileCard.Visible = true
+            profileScale.Scale = 0.001
+            task.delay(0.06, function()
+                TweenService:Create(profileScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+            end)
+        else
+            ProfileCard.Visible = true
+        end
     end
 end
 
@@ -3023,20 +3155,9 @@ HubUserChip.MouseButton1Click:Connect(function()
     toggleSideProfile()
 end)
 
-local hubMinimized = false
 HubMinBtn.MouseButton1Click:Connect(function()
-    hubMinimized = not hubMinimized
-    local targetSize = hubMinimized and UDim2.new(0, 820, 0, 58) or UDim2.new(0, 820, 0, 530)
-    TweenService:Create(MainHubWindow, TweenInfo.new(0.28, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = targetSize }):Play()
-    if ProfileCard and ProfileCard.Parent then
-        local profileScale = ProfileCard:FindFirstChildOfClass("UIScale") or create("UIScale", { Scale = 1, Parent = ProfileCard })
-        if hubMinimized then
-            TweenService:Create(profileScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 0.001 }):Play()
-        elseif isProfileSideOpen then
-            ProfileCard.Visible = true
-            TweenService:Create(profileScale, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-        end
-    end
+    closeMainHubUI()
+    showNotification("SecretExploits", "Hub minimized to capsule. Tap to reopen.", true)
 end)
 
 HubCloseBtn.MouseButton1Click:Connect(function()
