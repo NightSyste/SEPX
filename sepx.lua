@@ -846,126 +846,71 @@ local function isPlayerVerifiedScriptUser(player)
     if player == LocalPlayer then return true end
     if verifiedScriptUsers[player.UserId] or verifiedScriptUsers[player.Name] or verifiedScriptUsers[string.lower(player.Name)] then return true end
     if getgenv()._SE_ScriptUsers and (getgenv()._SE_ScriptUsers[player.UserId] or getgenv()._SE_ScriptUsers[player.Name]) then return true end
-
-    -- 1. Auto-verify Roblox Friends (If playing with friends, always show nametag!)
-    local isFriend = false
-    pcall(function()
-        if LocalPlayer.IsFriendsWith and LocalPlayer:IsFriendsWith(player.UserId) then
-            isFriend = true
-        end
-    end)
-    if isFriend then
-        verifiedScriptUsers[player.UserId] = true
-        verifiedScriptUsers[player.Name] = true
-        return true
-    end
-
-    -- 2. Replicated Animation Signature Check
-    pcall(function()
-        if player.Character then
-            local hum = player.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                local animator = hum:FindFirstChildOfClass("Animator") or hum
-                for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
-                    if track.Animation and track.Animation.AnimationId == "rbxassetid://507771019" and track.Priority == Enum.AnimationPriority.Action4 then
-                        verifiedScriptUsers[player.UserId] = true
-                        verifiedScriptUsers[player.Name] = true
-                    end
-                end
-            end
-        end
-    end)
-    if verifiedScriptUsers[player.UserId] then return true end
-
     return false
-end
-
--- Replicated Script User Signature (Replicates across Roblox FE so users detect each other 100% reliably)
-local function startReplicatedSignature()
-    pcall(function()
-        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local hum = char:WaitForChild("Humanoid", 4)
-        if not hum then return end
-        local animator = hum:WaitForChild("Animator", 4) or hum
-        local anim = Instance.new("Animation")
-        anim.AnimationId = "rbxassetid://507771019"
-        local track = animator:LoadAnimation(anim)
-        track.Priority = Enum.AnimationPriority.Action4
-        track.Looped = true
-        track:Play()
-        track:AdjustSpeed(0.0001)
-        track:AdjustWeight(0.0001)
-    end)
-end
-task.spawn(startReplicatedSignature)
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1)
-    startReplicatedSignature()
-end)
-
--- Silent Chat Handshake to detect other players running SecretExploits
-local HANDSHAKE_TOKEN = "[SE_ACTIVE]"
-local TextChatService = pcall(function() return game:GetService("TextChatService") end) and game:GetService("TextChatService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local function broadcastUserPresence()
-    pcall(function()
-        if TextChatService and TextChatService.TextChannels and TextChatService.TextChannels:FindFirstChild("RBXGeneral") then
-            TextChatService.TextChannels.RBXGeneral:SendAsync(HANDSHAKE_TOKEN)
-        elseif ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents") then
-            local sayEvent = ReplicatedStorage.DefaultChatSystemChatEvents:FindFirstChild("SayMessageRequest")
-            if sayEvent then
-                sayEvent:FireServer(HANDSHAKE_TOKEN, "All")
-            end
-        end
-    end)
 end
 
 local createPlayerNametag -- forward declaration
 
--- Listen for other SecretExploits users via Chat Handshake
-pcall(function()
-    if TextChatService then
-        TextChatService.MessageReceived:Connect(function(textChatMessage)
-            if string.find(textChatMessage.Text, "SE_ACTIVE") then
-                local senderSource = textChatMessage.TextSource
-                if senderSource then
-                    local p = Players:GetPlayerByUserId(senderSource.UserId)
-                    if p and p ~= LocalPlayer then
-                        verifiedScriptUsers[p.UserId] = true
-                        verifiedScriptUsers[p.Name] = true
-                        if isNametagsEnabled and p.Character then
-                            createPlayerNametag(p.Character, p)
-                        end
-                    end
-                end
+local function verifyScriptUser(playerOrName)
+    if not playerOrName then return end
+    local p = nil
+    if typeof(playerOrName) == "Instance" and playerOrName:IsA("Player") then
+        p = playerOrName
+    elseif typeof(playerOrName) == "string" then
+        verifiedScriptUsers[playerOrName] = true
+        verifiedScriptUsers[string.lower(playerOrName)] = true
+        p = Players:FindFirstChild(playerOrName)
+    end
+
+    if p then
+        verifiedScriptUsers[p.UserId] = true
+        verifiedScriptUsers[p.Name] = true
+        verifiedScriptUsers[string.lower(p.Name)] = true
+        if isNametagsEnabled and p.Character then
+            createPlayerNametag(p.Character, p)
+        end
+    end
+end
+
+-- 📡 FE-REPLICATED SILENT TRIGGER (ZERO CHAT!)
+-- When SecretExploits is active, character emits a distinct micro-physics signature
+-- on AssemblyAngularVelocity that replicates to all other clients in the Roblox server.
+local SIG_X = 0.0073
+local SIG_Z = 0.0042
+
+task.spawn(function()
+    while true do
+        pcall(function()
+            local char = LocalPlayer.Character
+            local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+            if root and root:IsA("BasePart") then
+                root.AssemblyAngularVelocity = Vector3.new(SIG_X, root.AssemblyAngularVelocity.Y, SIG_Z)
             end
         end)
+        task.wait(1.2)
     end
 end)
 
-pcall(function()
-    local chatEvents = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
-    if chatEvents then
-        local onMsg = chatEvents:FindFirstChild("OnMessageDoneFiltering")
-        if onMsg then
-            onMsg.OnClientEvent:Connect(function(messageData)
-                local senderName = messageData.FromSpeaker
-                local message = messageData.Message
-                if message and string.find(message, "SE_ACTIVE") then
-                    local p = Players:FindFirstChild(senderName)
-                    if p and p ~= LocalPlayer then
-                        verifiedScriptUsers[p.UserId] = true
-                        verifiedScriptUsers[p.Name] = true
-                        if isNametagsEnabled and p.Character then
-                            createPlayerNametag(p.Character, p)
-                        end
-                    end
+local function checkPlayerTriggerSignature(p)
+    if not p or p == LocalPlayer or isPlayerVerifiedScriptUser(p) then return end
+    pcall(function()
+        local char = p.Character
+        local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+        if root and root:IsA("BasePart") then
+            local ang = root.AssemblyAngularVelocity
+            if math.abs(ang.X - SIG_X) < 0.0015 and math.abs(ang.Z - SIG_Z) < 0.0015 then
+                -- Verified Script-User Trigger matched!
+                verifiedScriptUsers[p.UserId] = true
+                verifiedScriptUsers[p.Name] = true
+                verifiedScriptUsers[string.lower(p.Name)] = true
+                if isNametagsEnabled and char then
+                    createPlayerNametag(char, p)
                 end
-            end)
+                showNotification("SecretExploits", "Script-Nutzer @" .. p.Name .. " erkannt!", true)
+            end
         end
-    end
-end)
+    end)
+end
 
 createPlayerNametag = function(character, player)
     if not character then return end
@@ -1018,6 +963,48 @@ createPlayerNametag = function(character, player)
     local tagScale = card:FindFirstChild("TagScale")
     local cardStroke = addDualToneStroke(card, 1.4, 0.3, true)
 
+    -- Seamless Custom Background Wallpaper (Matching Hub and Profile Card)
+    local customBgAsset = getSepxBackgroundAsset()
+    if customBgAsset then
+        create("ImageLabel", {
+            Name = "NametagCustomBg",
+            Size = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundTransparency = 1,
+            Image = customBgAsset,
+            ScaleType = Enum.ScaleType.Crop,
+            ImageTransparency = 0.0,
+            ZIndex = 2,
+            Parent = card
+        }, {
+            create("UICorner", { CornerRadius = UDim.new(0, 12) })
+        })
+
+        -- Contrast Gradient Tint (Darkens center/right slightly so text is 100% readable while keeping the purple background rich & vibrant!)
+        create("Frame", {
+            Name = "NametagContrastTint",
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundColor3 = Color3.fromRGB(15, 11, 24),
+            BackgroundTransparency = 0.42,
+            ZIndex = 3,
+            Parent = card
+        }, {
+            create("UICorner", { CornerRadius = UDim.new(0, 12) }),
+            create("UIGradient", {
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 20, 60)),
+                    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(20, 14, 35)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 8, 18))
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.25),
+                    NumberSequenceKeypoint.new(1, 0.42)
+                }),
+                Rotation = 35
+            })
+        })
+    end
+
     -- Luxury Gradient Glass Background
     create("UIGradient", {
         Color = ColorSequence.new({
@@ -1036,7 +1023,7 @@ createPlayerNametag = function(character, player)
         Position = UDim2.new(0, 10, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
         BackgroundTransparency = 1,
-        ZIndex = 3,
+        ZIndex = 4,
         Parent = card
     })
 
@@ -1046,7 +1033,7 @@ createPlayerNametag = function(character, player)
             BackgroundTransparency = 1,
             Image = logoAsset,
             ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 4,
+            ZIndex = 5,
             Parent = logoHolder
         })
     else
@@ -1057,7 +1044,7 @@ createPlayerNametag = function(character, player)
             Text = "SE",
             TextColor3 = Color3.fromRGB(244, 114, 182),
             TextSize = 13,
-            ZIndex = 4,
+            ZIndex = 5,
             Parent = logoHolder
         })
     end
@@ -1068,7 +1055,7 @@ createPlayerNametag = function(character, player)
         Size = UDim2.new(1, -52, 1, 0),
         Position = UDim2.new(0, 50, 0, 0),
         BackgroundTransparency = 1,
-        ZIndex = 3,
+        ZIndex = 4,
         Parent = card
     }, {
         create("UIListLayout", {
@@ -1087,7 +1074,7 @@ createPlayerNametag = function(character, player)
             TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
             TextSize = 12.5,
             TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 4
+            ZIndex = 5
         }, {
             create("UIGradient", {
                 Color = ColorSequence.new({
@@ -1107,7 +1094,7 @@ createPlayerNametag = function(character, player)
             TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
             TextSize = 11.5,
             TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 4
+            ZIndex = 5
         }, {
             create("UIGradient", {
                 Color = ColorSequence.new({
@@ -1180,11 +1167,18 @@ createPlayerNametag = function(character, player)
             if cardCorner then
                 TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
             end
-            local bgImg = card:FindFirstChild("NametagBg")
+            local bgImg = card:FindFirstChild("NametagCustomBg")
             if bgImg then
                 local bgCorner = bgImg:FindFirstChildOfClass("UICorner")
                 if bgCorner then
                     TweenService:Create(bgCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
+                end
+            end
+            local tintFrame = card:FindFirstChild("NametagContrastTint")
+            if tintFrame then
+                local tintCorner = tintFrame:FindFirstChildOfClass("UICorner")
+                if tintCorner then
+                    TweenService:Create(tintCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
                 end
             end
             textContainer.Visible = false
@@ -1201,11 +1195,18 @@ createPlayerNametag = function(character, player)
             if cardCorner then
                 TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 12) }):Play()
             end
-            local bgImg = card:FindFirstChild("NametagBg")
+            local bgImg = card:FindFirstChild("NametagCustomBg")
             if bgImg then
                 local bgCorner = bgImg:FindFirstChildOfClass("UICorner")
                 if bgCorner then
                     TweenService:Create(bgCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 12) }):Play()
+                end
+            end
+            local tintFrame = card:FindFirstChild("NametagContrastTint")
+            if tintFrame then
+                local tintCorner = tintFrame:FindFirstChildOfClass("UICorner")
+                if tintCorner then
+                    TweenService:Create(tintCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 12) }):Play()
                 end
             end
             textContainer.Visible = true
@@ -1247,8 +1248,6 @@ local function toggleNametags(state)
     end
 
     if isNametagsEnabled then
-        broadcastUserPresence()
-
         -- ONLY create nametags for verified script users & friends (including LocalPlayer)
         for _, p in ipairs(Players:GetPlayers()) do
             if isPlayerVerifiedScriptUser(p) and p.Character then
@@ -1287,11 +1286,14 @@ local function toggleNametags(state)
                         end
                     end
 
-                    -- Periodic scan to detect friends and newly activated script users
+                    -- Periodic scan to detect trigger-signature and newly activated script users
                     local now = tick()
-                    if now - lastScan > 1.2 then
+                    if now - lastScan > 0.4 then
                         lastScan = now
                         for _, p in ipairs(Players:GetPlayers()) do
+                            if p ~= LocalPlayer and not isPlayerVerifiedScriptUser(p) then
+                                checkPlayerTriggerSignature(p)
+                            end
                             if isPlayerVerifiedScriptUser(p) and p.Character then
                                 local head = p.Character:FindFirstChild("Head")
                                 if head and not head:FindFirstChild("SE_Nametag") then
@@ -5111,6 +5113,20 @@ function SecretLib:CreateWindow(config)
         end
     end
 
+    function Window:AddScriptUser(nameOrPlayer)
+        verifyScriptUser(nameOrPlayer)
+    end
+
+    function Window:VerifyUser(nameOrPlayer)
+        verifyScriptUser(nameOrPlayer)
+    end
+
+    if windowConfig.ScriptUsers and typeof(windowConfig.ScriptUsers) == "table" then
+        for _, u in ipairs(windowConfig.ScriptUsers) do
+            verifyScriptUser(u)
+        end
+    end
+
     -- Launch Sequence (Key system vs Direct)
     if useKeySystem then
         if keySettings.Title then
@@ -5171,6 +5187,16 @@ end
 SecretLib.CreateNametag = function(self, char, p)
     if createPlayerNametag then
         return createPlayerNametag(char, p)
+    end
+end
+SecretLib.AddScriptUser = function(self, nameOrPlayer)
+    if verifyScriptUser then
+        return verifyScriptUser(nameOrPlayer)
+    end
+end
+SecretLib.VerifyUser = function(self, nameOrPlayer)
+    if verifyScriptUser then
+        return verifyScriptUser(nameOrPlayer)
     end
 end
 
