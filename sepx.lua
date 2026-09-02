@@ -860,7 +860,7 @@ local function createPlayerNametag(character, player)
         MaxDistance = 900,
         ResetOnSpawn = false,
         Active = true,
-        Parent = ScreenGui
+        Parent = head
     })
 
     -- Interactive Glass Card Button (Click to Teleport!)
@@ -973,14 +973,19 @@ local function createPlayerNametag(character, player)
         local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
         local targetRoot = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Head"))
 
-        if myRoot and targetRoot then
-            if tagScale then
-                TweenService:Create(tagScale, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 0.9 }):Play()
-                task.delay(0.09, function()
-                    TweenService:Create(tagScale, TweenInfo.new(0.14, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
-                end)
-            end
+        if tagScale then
+            TweenService:Create(tagScale, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 0.9 }):Play()
+            task.delay(0.09, function()
+                TweenService:Create(tagScale, TweenInfo.new(0.14, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+            end)
+        end
 
+        if character == myChar then
+            showNotification("SecretExploits", "Das ist dein eigener Charakter!", true)
+            return
+        end
+
+        if myRoot and targetRoot then
             myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
 
             local cam = workspace.CurrentCamera
@@ -1036,7 +1041,7 @@ local function createPlayerNametag(character, player)
                 Size = UDim2.new(0, 156, 0, 38)
             }):Play()
             if cardCorner then
-                TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 10) }):Play()
+                TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
             end
             textContainer.Visible = true
             logoHolder.AnchorPoint = Vector2.new(0, 0.5)
@@ -1074,13 +1079,13 @@ local function toggleNametags(state)
 
     if isNametagsEnabled then
         for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
+            if p.Character then
                 createPlayerNametag(p.Character, p)
             end
             if not nametagCharAddedConns[p] then
                 nametagCharAddedConns[p] = p.CharacterAdded:Connect(function(char)
                     task.wait(0.5)
-                    if isNametagsEnabled and p ~= LocalPlayer then createPlayerNametag(char, p) end
+                    if isNametagsEnabled then createPlayerNametag(char, p) end
                 end)
             end
         end
@@ -1089,7 +1094,7 @@ local function toggleNametags(state)
             nametagPlayerAddedConn = Players.PlayerAdded:Connect(function(p)
                 nametagCharAddedConns[p] = p.CharacterAdded:Connect(function(char)
                     task.wait(0.5)
-                    if isNametagsEnabled and p ~= LocalPlayer then createPlayerNametag(char, p) end
+                    if isNametagsEnabled then createPlayerNametag(char, p) end
                 end)
             end)
         end
@@ -3443,6 +3448,10 @@ local function addToggle(page, title, desc, defaultVal, callback)
     switch.MouseButton1Click:Connect(function()
         updateState(not state)
     end)
+
+    if state and callback then
+        task.spawn(callback, state)
+    end
 
     return {
         Instance = card,
