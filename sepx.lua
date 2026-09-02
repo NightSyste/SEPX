@@ -5121,11 +5121,13 @@ function SecretLib:CreateWindow(config)
         verifyScriptUser(nameOrPlayer)
     end
 
-    if config and config.ScriptUsers and typeof(config.ScriptUsers) == "table" then
-        for _, u in ipairs(config.ScriptUsers) do
-            verifyScriptUser(u)
+    pcall(function()
+        if typeof(config) == "table" and config.ScriptUsers and typeof(config.ScriptUsers) == "table" then
+            for _, u in ipairs(config.ScriptUsers) do
+                verifyScriptUser(u)
+            end
         end
-    end
+    end)
 
     -- Launch Sequence (Key system vs Direct)
     if useKeySystem then
