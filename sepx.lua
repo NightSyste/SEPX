@@ -872,41 +872,89 @@ local function verifyScriptUser(playerOrName)
     end
 end
 
--- 📡 FE-REPLICATED SILENT TRIGGER (ZERO CHAT!)
--- When SecretExploits is active, character emits a distinct micro-physics signature
--- on AssemblyAngularVelocity that replicates to all other clients in the Roblox server.
+local playerNametagMap = {}
+
+-- 📡 FE-REPLICATED MULTI-CHANNEL CONTINUOUS SILENT TRIGGER (ZERO CHAT!)
+-- Channel 1: Continuous Replicated Animation Track (Action4 Priority)
+local function startReplicatedAnimationSignature()
+    pcall(function()
+        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local hum = char:WaitForChild("Humanoid", 4)
+        if not hum then return end
+        local animator = hum:WaitForChild("Animator", 4) or hum
+
+        local animId = nil
+        local animateScript = char:FindFirstChild("Animate")
+        if animateScript then
+            local idle = animateScript:FindFirstChild("idle")
+            if idle then
+                local animObj = idle:FindFirstChildOfClass("Animation")
+                if animObj then animId = animObj.AnimationId end
+            end
+        end
+        if not animId or animId == "" then
+            animId = (hum.RigType == Enum.HumanoidRigType.R6) and "rbxassetid://180435571" or "rbxassetid://507771019"
+        end
+
+        local anim = Instance.new("Animation")
+        anim.AnimationId = animId
+        local track = animator:LoadAnimation(anim)
+        track.Priority = Enum.AnimationPriority.Action4
+        track.Looped = true
+        track:Play()
+        track:AdjustSpeed(0.0001)
+        track:AdjustWeight(0.0001)
+    end)
+end
+task.spawn(startReplicatedAnimationSignature)
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    startReplicatedAnimationSignature()
+end)
+
+-- Channel 2: Continuous Physics Heartbeat (RunService.Heartbeat 10x per second)
 local SIG_X = 0.0073
 local SIG_Z = 0.0042
-
-task.spawn(function()
-    while true do
-        pcall(function()
-            local char = LocalPlayer.Character
-            local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
-            if root and root:IsA("BasePart") then
-                root.AssemblyAngularVelocity = Vector3.new(SIG_X, root.AssemblyAngularVelocity.Y, SIG_Z)
-            end
-        end)
-        task.wait(1.2)
+local heartbeatCounter = 0
+RunService.Heartbeat:Connect(function()
+    heartbeatCounter = heartbeatCounter + 1
+    if heartbeatCounter % 6 == 0 then
+        local char = LocalPlayer.Character
+        local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+        if root and root:IsA("BasePart") then
+            root.AssemblyAngularVelocity = Vector3.new(SIG_X, root.AssemblyAngularVelocity.Y, SIG_Z)
+        end
     end
 end)
 
 local function checkPlayerTriggerSignature(p)
     if not p or p == LocalPlayer or isPlayerVerifiedScriptUser(p) then return end
+    local char = p.Character
+    if not char then return end
+
+    -- Check 1: Animation Priority Action4
     pcall(function()
-        local char = p.Character
-        local root = char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso"))
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            local animator = hum:FindFirstChildOfClass("Animator") or hum
+            for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                if track.Priority == Enum.AnimationPriority.Action4 then
+                    verifyScriptUser(p)
+                    return
+                end
+            end
+        end
+    end)
+    if isPlayerVerifiedScriptUser(p) then return end
+
+    -- Check 2: Micro-Physics Signature Pulse
+    pcall(function()
+        local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
         if root and root:IsA("BasePart") then
             local ang = root.AssemblyAngularVelocity
-            if math.abs(ang.X - SIG_X) < 0.0015 and math.abs(ang.Z - SIG_Z) < 0.0015 then
-                -- Verified Script-User Trigger matched!
-                verifiedScriptUsers[p.UserId] = true
-                verifiedScriptUsers[p.Name] = true
-                verifiedScriptUsers[string.lower(p.Name)] = true
-                if isNametagsEnabled and char then
-                    createPlayerNametag(char, p)
-                end
-                showNotification("SecretExploits", "Script-Nutzer @" .. p.Name .. " erkannt!", true)
+            if math.abs(ang.X - SIG_X) < 0.002 and math.abs(ang.Z - SIG_Z) < 0.002 then
+                verifyScriptUser(p)
+                return
             end
         end
     end)
@@ -914,7 +962,7 @@ end
 
 createPlayerNametag = function(character, player)
     if not character then return end
-    -- STRICT CHECK: ONLY verified players / friends running the script get a nametag! (NO random dummies)
+    -- STRICT CHECK: ONLY verified players running the script get a nametag! (NO random dummies)
     if not player or not player:IsA("Player") or not isPlayerVerifiedScriptUser(player) then
         return
     end
@@ -922,8 +970,12 @@ createPlayerNametag = function(character, player)
     local head = character:WaitForChild("Head", 3)
     if not head then return end
 
-    if head:FindFirstChild("SE_Nametag") then
-        head:FindFirstChild("SE_Nametag"):Destroy()
+    -- Reuse existing nametag if already registered in ScreenGui
+    local existingBbg = playerNametagMap[player]
+    if existingBbg and existingBbg.Parent then
+        existingBbg.Adornee = head
+        existingBbg.Enabled = isNametagsEnabled
+        return existingBbg
     end
 
     local logoAsset = getSepxLogoAsset()
@@ -931,7 +983,7 @@ createPlayerNametag = function(character, player)
     local playerHandle = "@" .. playerName
 
     local bbg = create("BillboardGui", {
-        Name = "SE_Nametag",
+        Name = "SE_Nametag_" .. player.UserId,
         Adornee = head,
         Size = UDim2.new(0, 204, 0, 50),
         StudsOffset = Vector3.new(0, 2.7, 0),
@@ -940,8 +992,10 @@ createPlayerNametag = function(character, player)
         MaxDistance = 900,
         ResetOnSpawn = false,
         Active = true,
-        Parent = head
+        Enabled = isNametagsEnabled,
+        Parent = ScreenGui -- PROTECTED: Placed in ScreenGui so game/respawn can NEVER delete it!
     })
+    playerNametagMap[player] = bbg
 
     -- Interactive Glass Card Button (Click to Teleport!)
     local card = create("TextButton", {
@@ -1153,11 +1207,18 @@ createPlayerNametag = function(character, player)
     -- 🔄 Dynamic Distance Minimization (matching screenshot media_1788371484816.jpg)
     local isMinimized = false
     local function updateDistance()
-        if not character or not character.Parent or not head or not head.Parent then return false end
+        if not bbg or not bbg.Parent then return false end
+        local targetHead = bbg.Adornee
+        if not targetHead or not targetHead.Parent then
+            bbg.Enabled = false
+            return true
+        end
+
         local cam = workspace.CurrentCamera
         if not cam then return true end
 
-        local dist = (cam.CFrame.Position - head.Position).Magnitude
+        bbg.Enabled = isNametagsEnabled
+        local dist = (cam.CFrame.Position - targetHead.Position).Magnitude
 
         if dist > 55 and not isMinimized then
             isMinimized = true
@@ -1222,14 +1283,33 @@ createPlayerNametag = function(character, player)
     local tagData = {
         Tag = bbg,
         Update = updateDistance,
-        Character = character
+        Character = character,
+        Player = player
     }
     table.insert(activeNametags, bbg)
     table.insert(activeNametagData, tagData)
 
+    -- Auto-recover when character respawns (NEVER destroy on death/streaming!)
     character.AncestryChanged:Connect(function(_, parent)
         if not parent and bbg and bbg.Parent then
-            bbg:Destroy()
+            bbg.Enabled = false
+        end
+    end)
+
+    player.CharacterAdded:Connect(function(newChar)
+        task.wait(0.3)
+        local newHead = newChar:WaitForChild("Head", 5)
+        if newHead and bbg and bbg.Parent then
+            bbg.Adornee = newHead
+            bbg.Enabled = isNametagsEnabled
+            tagData.Character = newChar
+        end
+    end)
+
+    Players.PlayerRemoving:Connect(function(leavingPlayer)
+        if leavingPlayer == player then
+            if bbg and bbg.Parent then bbg:Destroy() end
+            playerNametagMap[player] = nil
         end
     end)
 
@@ -1248,33 +1328,24 @@ local function toggleNametags(state)
     end
 
     if isNametagsEnabled then
-        -- ONLY create nametags for verified script users & friends (including LocalPlayer)
+        -- Enable all existing nametags
+        for p, bbg in pairs(playerNametagMap) do
+            if bbg and bbg.Parent and isPlayerVerifiedScriptUser(p) then
+                bbg.Enabled = true
+                if p.Character and p.Character:FindFirstChild("Head") then
+                    bbg.Adornee = p.Character.Head
+                end
+            end
+        end
+
+        -- Create nametags for any verified script user lacking one
         for _, p in ipairs(Players:GetPlayers()) do
             if isPlayerVerifiedScriptUser(p) and p.Character then
                 createPlayerNametag(p.Character, p)
             end
-            if not nametagCharAddedConns[p] then
-                nametagCharAddedConns[p] = p.CharacterAdded:Connect(function(char)
-                    task.wait(0.5)
-                    if isNametagsEnabled and isPlayerVerifiedScriptUser(p) then
-                        createPlayerNametag(char, p)
-                    end
-                end)
-            end
         end
 
-        if not nametagPlayerAddedConn then
-            nametagPlayerAddedConn = Players.PlayerAdded:Connect(function(p)
-                nametagCharAddedConns[p] = p.CharacterAdded:Connect(function(char)
-                    task.wait(0.5)
-                    if isNametagsEnabled and isPlayerVerifiedScriptUser(p) then
-                        createPlayerNametag(char, p)
-                    end
-                end)
-            end)
-        end
-
-        -- Start distance update and friend scan loop
+        -- Start high-frequency distance update and auto-detection scan loop
         if not nametagLoopThread then
             nametagLoopThread = task.spawn(function()
                 local lastScan = 0
@@ -1286,24 +1357,21 @@ local function toggleNametags(state)
                         end
                     end
 
-                    -- Periodic scan to detect trigger-signature and newly activated script users
+                    -- High-frequency scan (every 0.15s) to detect other script users automatically
                     local now = tick()
-                    if now - lastScan > 0.4 then
+                    if now - lastScan > 0.15 then
                         lastScan = now
                         for _, p in ipairs(Players:GetPlayers()) do
                             if p ~= LocalPlayer and not isPlayerVerifiedScriptUser(p) then
                                 checkPlayerTriggerSignature(p)
                             end
                             if isPlayerVerifiedScriptUser(p) and p.Character then
-                                local head = p.Character:FindFirstChild("Head")
-                                if head and not head:FindFirstChild("SE_Nametag") then
-                                    createPlayerNametag(p.Character, p)
-                                end
+                                createPlayerNametag(p.Character, p)
                             end
                         end
                     end
 
-                    task.wait(0.1)
+                    task.wait(0.08)
                 end
                 nametagLoopThread = nil
             end)
@@ -1311,21 +1379,11 @@ local function toggleNametags(state)
 
         showNotification("SecretExploits", "Overhead Nametags aktiviert! Klicke zum Teleportieren.", true)
     else
-        for _, bbg in ipairs(activeNametags) do
-            if bbg and bbg.Parent then bbg:Destroy() end
+        for _, bbg in pairs(playerNametagMap) do
+            if bbg and bbg.Parent then
+                bbg.Enabled = false
+            end
         end
-        activeNametags = {}
-        activeNametagData = {}
-
-        if nametagPlayerAddedConn then
-            nametagPlayerAddedConn:Disconnect()
-            nametagPlayerAddedConn = nil
-        end
-        for p, conn in pairs(nametagCharAddedConns) do
-            if conn then conn:Disconnect() end
-        end
-        nametagCharAddedConns = {}
-
         showNotification("SecretExploits", "Overhead Nametags deaktiviert.", false)
     end
 end
