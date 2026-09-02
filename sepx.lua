@@ -846,11 +846,65 @@ local function isPlayerVerifiedScriptUser(player)
     if player == LocalPlayer then return true end
     if verifiedScriptUsers[player.UserId] or verifiedScriptUsers[player.Name] or verifiedScriptUsers[string.lower(player.Name)] then return true end
     if getgenv()._SE_ScriptUsers and (getgenv()._SE_ScriptUsers[player.UserId] or getgenv()._SE_ScriptUsers[player.Name]) then return true end
+
+    -- 1. Auto-verify Roblox Friends (If playing with friends, always show nametag!)
+    local isFriend = false
+    pcall(function()
+        if LocalPlayer.IsFriendsWith and LocalPlayer:IsFriendsWith(player.UserId) then
+            isFriend = true
+        end
+    end)
+    if isFriend then
+        verifiedScriptUsers[player.UserId] = true
+        verifiedScriptUsers[player.Name] = true
+        return true
+    end
+
+    -- 2. Replicated Animation Signature Check
+    pcall(function()
+        if player.Character then
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                local animator = hum:FindFirstChildOfClass("Animator") or hum
+                for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+                    if track.Animation and track.Animation.AnimationId == "rbxassetid://507771019" and track.Priority == Enum.AnimationPriority.Action4 then
+                        verifiedScriptUsers[player.UserId] = true
+                        verifiedScriptUsers[player.Name] = true
+                    end
+                end
+            end
+        end
+    end)
+    if verifiedScriptUsers[player.UserId] then return true end
+
     return false
 end
 
+-- Replicated Script User Signature (Replicates across Roblox FE so users detect each other 100% reliably)
+local function startReplicatedSignature()
+    pcall(function()
+        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+        local hum = char:WaitForChild("Humanoid", 4)
+        if not hum then return end
+        local animator = hum:WaitForChild("Animator", 4) or hum
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://507771019"
+        local track = animator:LoadAnimation(anim)
+        track.Priority = Enum.AnimationPriority.Action4
+        track.Looped = true
+        track:Play()
+        track:AdjustSpeed(0.0001)
+        track:AdjustWeight(0.0001)
+    end)
+end
+task.spawn(startReplicatedSignature)
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    startReplicatedSignature()
+end)
+
 -- Silent Chat Handshake to detect other players running SecretExploits
-local HANDSHAKE_TOKEN = "\u{200B}\u{200C}SE_ACTIVE\u{200B}"
+local HANDSHAKE_TOKEN = "[SE_ACTIVE]"
 local TextChatService = pcall(function() return game:GetService("TextChatService") end) and game:GetService("TextChatService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -873,7 +927,7 @@ local createPlayerNametag -- forward declaration
 pcall(function()
     if TextChatService then
         TextChatService.MessageReceived:Connect(function(textChatMessage)
-            if string.find(textChatMessage.Text, HANDSHAKE_TOKEN) or string.find(textChatMessage.Text, "SE_ACTIVE") then
+            if string.find(textChatMessage.Text, "SE_ACTIVE") then
                 local senderSource = textChatMessage.TextSource
                 if senderSource then
                     local p = Players:GetPlayerByUserId(senderSource.UserId)
@@ -898,7 +952,7 @@ pcall(function()
             onMsg.OnClientEvent:Connect(function(messageData)
                 local senderName = messageData.FromSpeaker
                 local message = messageData.Message
-                if message and (string.find(message, HANDSHAKE_TOKEN) or string.find(message, "SE_ACTIVE")) then
+                if message and string.find(message, "SE_ACTIVE") then
                     local p = Players:FindFirstChild(senderName)
                     if p and p ~= LocalPlayer then
                         verifiedScriptUsers[p.UserId] = true
@@ -915,7 +969,7 @@ end)
 
 createPlayerNametag = function(character, player)
     if not character then return end
-    -- STRICT CHECK: ONLY verified players running the script get a nametag! (NO dummies/NPCs)
+    -- STRICT CHECK: ONLY verified players / friends running the script get a nametag! (NO random dummies)
     if not player or not player:IsA("Player") or not isPlayerVerifiedScriptUser(player) then
         return
     end
@@ -934,8 +988,8 @@ createPlayerNametag = function(character, player)
     local bbg = create("BillboardGui", {
         Name = "SE_Nametag",
         Adornee = head,
-        Size = UDim2.new(0, 156, 0, 38),
-        StudsOffset = Vector3.new(0, 2.5, 0),
+        Size = UDim2.new(0, 204, 0, 50),
+        StudsOffset = Vector3.new(0, 2.7, 0),
         AlwaysOnTop = true,
         LightInfluence = 0,
         MaxDistance = 900,
@@ -948,8 +1002,8 @@ createPlayerNametag = function(character, player)
     local card = create("TextButton", {
         Name = "NametagCard",
         Size = UDim2.new(1, 0, 1, 0),
-        BackgroundColor3 = Color3.fromRGB(14, 10, 22),
-        BackgroundTransparency = 0.2,
+        BackgroundColor3 = Color3.fromRGB(16, 11, 26),
+        BackgroundTransparency = 0.05,
         Text = "",
         AutoButtonColor = false,
         ClipsDescendants = true,
@@ -957,47 +1011,29 @@ createPlayerNametag = function(character, player)
         ZIndex = 1,
         Parent = bbg
     }, {
-        create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+        create("UICorner", { CornerRadius = UDim.new(0, 12) }),
         create("UIScale", { Name = "TagScale", Scale = 1 })
     })
     local cardCorner = card:FindFirstChildOfClass("UICorner")
     local tagScale = card:FindFirstChild("TagScale")
-    local cardStroke = addDualToneStroke(card, 1.2, 0.35, true)
+    local cardStroke = addDualToneStroke(card, 1.4, 0.3, true)
 
-    -- Seamless UI Matching Background (Official SecretExploits Wallpaper)
-    local bgAsset = getSepxBackgroundAsset()
-    if bgAsset then
-        create("ImageLabel", {
-            Name = "NametagBg",
-            Size = UDim2.new(1, 0, 1, 0),
-            Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Image = bgAsset,
-            ScaleType = Enum.ScaleType.Crop,
-            ImageTransparency = 0.08,
-            ZIndex = 2,
-            Parent = card
-        }, {
-            create("UICorner", { CornerRadius = UDim.new(0, 10) })
-        })
-    end
-
-    -- Ambient Gradient matching UI GlassDeep
+    -- Luxury Gradient Glass Background
     create("UIGradient", {
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(28, 20, 52)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(16, 12, 28)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(11, 8, 20))
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(56, 26, 102)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(25, 17, 44)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(13, 9, 22))
         }),
-        Rotation = 45,
+        Rotation = 35,
         Parent = card
     })
 
-    -- Logo Holder
+    -- Logo Holder (32x32)
     local logoHolder = create("Frame", {
         Name = "LogoHolder",
-        Size = UDim2.new(0, 24, 0, 24),
-        Position = UDim2.new(0, 8, 0.5, 0),
+        Size = UDim2.new(0, 32, 0, 32),
+        Position = UDim2.new(0, 10, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
         BackgroundTransparency = 1,
         ZIndex = 3,
@@ -1020,17 +1056,17 @@ createPlayerNametag = function(character, player)
             Font = Theme.FontBold,
             Text = "SE",
             TextColor3 = Color3.fromRGB(244, 114, 182),
-            TextSize = 12,
+            TextSize = 13,
             ZIndex = 4,
             Parent = logoHolder
         })
     end
 
-    -- Text Stack (SECRETEXTPLOITS + @username)
+    -- Text Stack (SECRETEXTPLOITS + @username with Radiant Gradients & Shadows!)
     local textContainer = create("Frame", {
         Name = "TextContainer",
-        Size = UDim2.new(1, -38, 1, 0),
-        Position = UDim2.new(0, 36, 0, 0),
+        Size = UDim2.new(1, -52, 1, 0),
+        Position = UDim2.new(0, 50, 0, 0),
         BackgroundTransparency = 1,
         ZIndex = 3,
         Parent = card
@@ -1042,25 +1078,43 @@ createPlayerNametag = function(character, player)
         }),
         create("TextLabel", {
             Name = "BrandTag",
-            Size = UDim2.new(1, 0, 0, 14),
+            Size = UDim2.new(1, 0, 0, 16),
             BackgroundTransparency = 1,
             Font = Theme.FontBold,
             Text = "SECRETEXTPLOITS",
             TextColor3 = Color3.fromRGB(255, 255, 255),
-            TextSize = 11,
+            TextStrokeTransparency = 0.35,
+            TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
+            TextSize = 12.5,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 4
+        }, {
+            create("UIGradient", {
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(215, 190, 255))
+                })
+            })
         }),
         create("TextLabel", {
             Name = "UsernameTag",
-            Size = UDim2.new(1, 0, 0, 13),
+            Size = UDim2.new(1, 0, 0, 15),
             BackgroundTransparency = 1,
-            Font = Theme.FontMedium,
+            Font = Theme.FontBold,
             Text = playerHandle,
-            TextColor3 = Color3.fromRGB(180, 185, 220),
-            TextSize = 10,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextStrokeTransparency = 0.35,
+            TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
+            TextSize = 11.5,
             TextXAlignment = Enum.TextXAlignment.Left,
             ZIndex = 4
+        }, {
+            create("UIGradient", {
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(192, 132, 252)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(244, 114, 182))
+                })
+            })
         })
     })
 
@@ -1121,7 +1175,7 @@ createPlayerNametag = function(character, player)
         if dist > 55 and not isMinimized then
             isMinimized = true
             TweenService:Create(bbg, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 38, 0, 38)
+                Size = UDim2.new(0, 48, 0, 48)
             }):Play()
             if cardCorner then
                 TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
@@ -1137,28 +1191,28 @@ createPlayerNametag = function(character, player)
             logoHolder.AnchorPoint = Vector2.new(0.5, 0.5)
             TweenService:Create(logoHolder, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 Position = UDim2.new(0.5, 0, 0.5, 0),
-                Size = UDim2.new(0, 26, 0, 26)
+                Size = UDim2.new(0, 32, 0, 32)
             }):Play()
         elseif dist <= 55 and isMinimized then
             isMinimized = false
             TweenService:Create(bbg, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 156, 0, 38)
+                Size = UDim2.new(0, 204, 0, 50)
             }):Play()
             if cardCorner then
-                TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 10) }):Play()
+                TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 12) }):Play()
             end
             local bgImg = card:FindFirstChild("NametagBg")
             if bgImg then
                 local bgCorner = bgImg:FindFirstChildOfClass("UICorner")
                 if bgCorner then
-                    TweenService:Create(bgCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 10) }):Play()
+                    TweenService:Create(bgCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 12) }):Play()
                 end
             end
             textContainer.Visible = true
             logoHolder.AnchorPoint = Vector2.new(0, 0.5)
             TweenService:Create(logoHolder, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Position = UDim2.new(0, 8, 0.5, 0),
-                Size = UDim2.new(0, 24, 0, 24)
+                Position = UDim2.new(0, 10, 0.5, 0),
+                Size = UDim2.new(0, 32, 0, 32)
             }):Play()
         end
         return true
@@ -1195,7 +1249,7 @@ local function toggleNametags(state)
     if isNametagsEnabled then
         broadcastUserPresence()
 
-        -- ONLY create nametags for verified script users (including LocalPlayer)
+        -- ONLY create nametags for verified script users & friends (including LocalPlayer)
         for _, p in ipairs(Players:GetPlayers()) do
             if isPlayerVerifiedScriptUser(p) and p.Character then
                 createPlayerNametag(p.Character, p)
@@ -1221,9 +1275,10 @@ local function toggleNametags(state)
             end)
         end
 
-        -- Start distance update loop (morphs between full banner and circular logo badge)
+        -- Start distance update and friend scan loop
         if not nametagLoopThread then
             nametagLoopThread = task.spawn(function()
+                local lastScan = 0
                 while isNametagsEnabled do
                     for i = #activeNametagData, 1, -1 do
                         local item = activeNametagData[i]
@@ -1231,6 +1286,21 @@ local function toggleNametags(state)
                             table.remove(activeNametagData, i)
                         end
                     end
+
+                    -- Periodic scan to detect friends and newly activated script users
+                    local now = tick()
+                    if now - lastScan > 1.2 then
+                        lastScan = now
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if isPlayerVerifiedScriptUser(p) and p.Character then
+                                local head = p.Character:FindFirstChild("Head")
+                                if head and not head:FindFirstChild("SE_Nametag") then
+                                    createPlayerNametag(p.Character, p)
+                                end
+                            end
+                        end
+                    end
+
                     task.wait(0.1)
                 end
                 nametagLoopThread = nil
