@@ -618,110 +618,115 @@ pcall(function() ScreenGui.ScreenInsets = Enum.ScreenInsets.None end)
 ScreenGui.Parent = ParentContainer
 
 -- ═══════════════════════════════════════════════════════════════════
--- 🏝️ TOP-CENTER DYNAMIC ISLAND NOTIFICATION SYSTEM
+-- 🔔 BOTTOM-RIGHT TOAST NOTIFICATION SYSTEM (NOVOLINE SAAS STYLE)
 -- ═══════════════════════════════════════════════════════════════════
-local DynamicIslandContainer = create("Frame", {
-    Name = "DynamicIslandContainer",
-    Size = UDim2.new(1, 0, 0, 100),
-    Position = UDim2.new(0, 0, 0, 0),
+local NotificationContainer = create("Frame", {
+    Name = "NotificationContainer",
+    Size = UDim2.new(0, 330, 1, -40),
+    Position = UDim2.new(1, -20, 1, -20),
+    AnchorPoint = Vector2.new(1, 1),
     BackgroundTransparency = 1,
-    ZIndex = 300
+    ClipsDescendants = false,
+    ZIndex = 400,
+    Parent = ScreenGui
+}, {
+    create("UIListLayout", {
+        FillDirection = Enum.FillDirection.Vertical,
+        VerticalAlignment = Enum.VerticalAlignment.Bottom,
+        HorizontalAlignment = Enum.HorizontalAlignment.Right,
+        Padding = UDim.new(0, 10)
+    })
 })
-DynamicIslandContainer.Parent = ScreenGui
 
-local activeIsland = nil
-local activeIslandThread = nil
-
-local function showNotification(title, message, isSuccess)
+local function showNotification(title, message, isSuccess, footnote)
     local logoAsset = getSepxLogoAsset()
-    local pulseColor = isSuccess and Theme.StatusGreen or Theme.VioletLight
 
-    -- Dismiss previous active island smoothly if one is already visible
-    if activeIsland and activeIsland.Parent then
-        if activeIslandThread then
-            task.cancel(activeIslandThread)
-            activeIslandThread = nil
-        end
-        local oldIsland = activeIsland
-        TweenService:Create(oldIsland, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = UDim2.new(0.5, 0, 0, -60),
-            BackgroundTransparency = 1
-        }):Play()
-        task.delay(0.22, function()
-            if oldIsland and oldIsland.Parent then oldIsland:Destroy() end
-        end)
+    -- Icon selection matching the alert
+    local notifIcon = nil
+    local iconColor = Color3.fromRGB(255, 255, 255)
+    if isSuccess == false then
+        notifIcon = "rbxassetid://10709790835" -- Alert / Warning Triangle
+        iconColor = Color3.fromRGB(251, 191, 36) -- Warning Amber
+    elseif isSuccess == true then
+        notifIcon = logoAsset or Icons.Check
+        iconColor = Theme.VioletLight
+    else
+        notifIcon = logoAsset or Icons.Sparkle
     end
 
-    local island = create("Frame", {
-        Name = "DynamicIsland",
-        Size = UDim2.new(0, 0, 0, 56),
-        AutomaticSize = Enum.AutomaticSize.X,
-        AnchorPoint = Vector2.new(0.5, 0),
-        Position = UDim2.new(0.5, 0, 0, -70),
-        BackgroundColor3 = Color3.fromRGB(15, 12, 25),
-        BackgroundTransparency = 0.08,
+    local toast = create("Frame", {
+        Name = "ToastCard",
+        Size = UDim2.new(1, 0, 0, footnote and 72 or 60),
+        BackgroundColor3 = Color3.fromRGB(13, 10, 22),
+        BackgroundTransparency = 0.12,
         ClipsDescendants = true,
-        ZIndex = 301,
-        Parent = DynamicIslandContainer
+        ZIndex = 401,
+        Parent = NotificationContainer
     }, {
-        create("UICorner", { CornerRadius = UDim.new(1, 0) }),
+        create("UICorner", { CornerRadius = UDim.new(0, 16) }),
+        create("UIScale", { Name = "ToastScale", Scale = 0.82 }),
         create("UIPadding", {
-            PaddingLeft = UDim.new(0, 14),
-            PaddingRight = UDim.new(0, 22),
-            PaddingTop = UDim.new(0, 8),
-            PaddingBottom = UDim.new(0, 8)
-        }),
-        create("UIListLayout", {
-            FillDirection = Enum.FillDirection.Horizontal,
-            VerticalAlignment = Enum.VerticalAlignment.Center,
-            Padding = UDim.new(0, 12)
+            PaddingLeft = UDim.new(0, 16),
+            PaddingRight = UDim.new(0, 14),
+            PaddingTop = UDim.new(0, 10),
+            PaddingBottom = UDim.new(0, 10)
         })
     })
-    addDualToneStroke(island, 1.4, 0.28, true)
-    activeIsland = island
+    addDualToneStroke(toast, 1.2, 0.35, true)
 
-    -- 1. Left SecretExploits Circular Transparent Logo Badge (38 x 38)
-    local logoBadge = create("Frame", {
-        Size = UDim2.new(0, 38, 0, 38),
-        BackgroundColor3 = Color3.fromRGB(28, 20, 48),
-        BackgroundTransparency = 0.25,
-        ZIndex = 302,
-        Parent = island
-    }, {
-        create("UICorner", { CornerRadius = UDim.new(1, 0) })
+    -- Ambient Gradient Glow
+    create("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(26, 18, 45)),
+            ColorSequenceKeypoint.new(0.55, Color3.fromRGB(15, 11, 24)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 8, 18))
+        }),
+        Rotation = 45,
+        Parent = toast
     })
 
-    if logoAsset then
+    -- Left Icon (Prominent & Clean like in screenshot)
+    local iconHolder = create("Frame", {
+        Name = "IconHolder",
+        Size = UDim2.new(0, 30, 0, 30),
+        Position = UDim2.new(0, 0, 0, 4),
+        BackgroundTransparency = 1,
+        ZIndex = 402,
+        Parent = toast
+    })
+
+    if logoAsset and (isSuccess ~= false) then
         create("ImageLabel", {
-            Size = UDim2.new(1, -2, 1, -2),
+            Size = UDim2.new(1, 0, 1, 0),
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.new(0.5, 0, 0.5, 0),
             BackgroundTransparency = 1,
             Image = logoAsset,
             ScaleType = Enum.ScaleType.Fit,
-            ZIndex = 303,
-            Parent = logoBadge
+            ZIndex = 403,
+            Parent = iconHolder
         })
     else
         create("ImageLabel", {
-            Size = UDim2.new(0, 22, 0, 22),
+            Size = UDim2.new(0, 24, 0, 24),
             AnchorPoint = Vector2.new(0.5, 0.5),
             Position = UDim2.new(0.5, 0, 0.5, 0),
             BackgroundTransparency = 1,
-            Image = isSuccess and Icons.Check or Icons.Sparkle,
-            ImageColor3 = isSuccess and Theme.StatusGreen or Color3.fromRGB(216, 110, 255),
-            ZIndex = 303,
-            Parent = logoBadge
+            Image = notifIcon or Icons.Sparkle,
+            ImageColor3 = iconColor,
+            ZIndex = 403,
+            Parent = iconHolder
         })
     end
 
-    -- 2. Two-Line Vertical Text Group (Title + Subtitle)
+    -- Center Text Group
     local textGroup = create("Frame", {
-        Size = UDim2.new(0, 0, 1, 0),
-        AutomaticSize = Enum.AutomaticSize.X,
+        Name = "TextGroup",
+        Size = UDim2.new(1, -54, 1, 0),
+        Position = UDim2.new(0, 38, 0, 0),
         BackgroundTransparency = 1,
-        ZIndex = 302,
-        Parent = island
+        ZIndex = 402,
+        Parent = toast
     }, {
         create("UIListLayout", {
             FillDirection = Enum.FillDirection.Vertical,
@@ -729,78 +734,401 @@ local function showNotification(title, message, isSuccess)
             Padding = UDim.new(0, 2)
         }),
         create("TextLabel", {
-            Size = UDim2.new(0, 0, 0, 18),
-            AutomaticSize = Enum.AutomaticSize.X,
+            Name = "Title",
+            Size = UDim2.new(1, 0, 0, 16),
             BackgroundTransparency = 1,
             Font = Theme.FontBold,
             Text = title or "SecretExploits",
             TextColor3 = Color3.fromRGB(255, 255, 255),
-            TextSize = 14,
+            TextSize = 13.5,
             TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 303
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            ZIndex = 403
         }),
         create("TextLabel", {
-            Size = UDim2.new(0, 0, 0, 16),
-            AutomaticSize = Enum.AutomaticSize.X,
+            Name = "Message",
+            Size = UDim2.new(1, 0, 0, 15),
             BackgroundTransparency = 1,
             Font = Theme.FontMedium,
             Text = message or "",
-            TextColor3 = Color3.fromRGB(180, 185, 220),
-            TextSize = 12,
+            TextColor3 = Color3.fromRGB(195, 200, 225),
+            TextSize = 11.5,
             TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 303
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            ZIndex = 403
         })
     })
 
-    -- 3. Far-Right Glowing Status Pulse Dot
-    local pulseHolder = create("Frame", {
-        Size = UDim2.new(0, 10, 0, 10),
+    if footnote and tostring(footnote) ~= "" then
+        create("TextLabel", {
+            Name = "Footnote",
+            Size = UDim2.new(1, 0, 0, 12),
+            BackgroundTransparency = 1,
+            Font = Theme.FontRegular,
+            Text = tostring(footnote),
+            TextColor3 = Color3.fromRGB(130, 135, 165),
+            TextSize = 10,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 403,
+            Parent = textGroup
+        })
+    end
+
+    -- Top-Right Mini Dismiss '✕' Button (matching screenshot)
+    local dismissBtn = create("TextButton", {
+        Name = "DismissBtn",
+        Size = UDim2.new(0, 18, 0, 18),
+        Position = UDim2.new(1, -2, 0, -2),
+        AnchorPoint = Vector2.new(1, 0),
         BackgroundTransparency = 1,
-        ZIndex = 302,
-        Parent = island
+        Font = Theme.FontBold,
+        Text = "✕",
+        TextColor3 = Color3.fromRGB(140, 145, 170),
+        TextSize = 10,
+        AutoButtonColor = false,
+        ZIndex = 404,
+        Parent = toast
     })
-    local pulseDot = create("Frame", {
-        Size = UDim2.new(0, 9, 0, 9),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        BackgroundColor3 = pulseColor,
-        ZIndex = 303,
-        Parent = pulseHolder
+
+    local toastScale = toast:FindFirstChild("ToastScale")
+    local isDismissed = false
+
+    local function dismissToast()
+        if isDismissed then return end
+        isDismissed = true
+        if toastScale then
+            TweenService:Create(toastScale, TweenInfo.new(0.24, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 0.001 }):Play()
+        end
+        local tw = TweenService:Create(toast, TweenInfo.new(0.24), { BackgroundTransparency = 1 })
+        tw:Play()
+        tw.Completed:Connect(function()
+            if toast and toast.Parent then toast:Destroy() end
+        end)
+    end
+
+    dismissBtn.MouseEnter:Connect(function()
+        TweenService:Create(dismissBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+    end)
+    dismissBtn.MouseLeave:Connect(function()
+        TweenService:Create(dismissBtn, TweenInfo.new(0.15), { TextColor3 = Color3.fromRGB(140, 145, 170) }):Play()
+    end)
+    dismissBtn.MouseButton1Click:Connect(dismissToast)
+
+    -- Entrance animation: Spring scale
+    if toastScale then
+        TweenService:Create(toastScale, TweenInfo.new(0.36, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+    end
+
+    -- Auto-retract after 4.2s
+    task.delay(4.2, function()
+        if not isDismissed then
+            dismissToast()
+        end
+    end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════
+-- 🏷️ SECRETEXTPLOITS OVERHEAD NAMETAG SYSTEM (NOVOLINE BILLBOARD STYLE)
+-- ═══════════════════════════════════════════════════════════════════
+local activeNametags = {}
+local activeNametagData = {}
+local isNametagsEnabled = false
+local nametagPlayerAddedConn = nil
+local nametagCharAddedConns = {}
+local nametagLoopThread = nil
+
+local function createPlayerNametag(character, player)
+    if not character then return end
+    local head = character:WaitForChild("Head", 3)
+    if not head then return end
+
+    if head:FindFirstChild("SE_Nametag") then
+        head:FindFirstChild("SE_Nametag"):Destroy()
+    end
+
+    local logoAsset = getSepxLogoAsset()
+    local playerName = player and player.Name or (character.Name or "User")
+    local playerHandle = "@" .. playerName
+
+    local bbg = create("BillboardGui", {
+        Name = "SE_Nametag",
+        Adornee = head,
+        Size = UDim2.new(0, 156, 0, 38),
+        StudsOffset = Vector3.new(0, 2.5, 0),
+        AlwaysOnTop = true,
+        LightInfluence = 0,
+        MaxDistance = 900,
+        ResetOnSpawn = false,
+        Active = true,
+        Parent = ScreenGui
+    })
+
+    -- Interactive Glass Card Button (Click to Teleport!)
+    local card = create("TextButton", {
+        Name = "NametagCard",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(14, 10, 22),
+        BackgroundTransparency = 0.2,
+        Text = "",
+        AutoButtonColor = false,
+        ClipsDescendants = true,
+        Active = true,
+        ZIndex = 1,
+        Parent = bbg
     }, {
-        create("UICorner", { CornerRadius = UDim.new(1, 0) })
+        create("UICorner", { CornerRadius = UDim.new(0, 10) }),
+        create("UIScale", { Name = "TagScale", Scale = 1 })
+    })
+    local cardCorner = card:FindFirstChildOfClass("UICorner")
+    local tagScale = card:FindFirstChild("TagScale")
+    local cardStroke = addDualToneStroke(card, 1.2, 0.35, true)
+
+    -- Ambient Smoky Texture
+    create("ImageLabel", {
+        Name = "SmokeOverlay",
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://4996891465",
+        ImageColor3 = Color3.fromRGB(168, 85, 247),
+        ImageTransparency = 0.74,
+        ScaleType = Enum.ScaleType.Crop,
+        ZIndex = 2,
+        Parent = card
     })
 
-    -- Animate Dropdown (Top -> Down with Spring Easing)
-    island.Position = UDim2.new(0.5, 0, 0, -70)
-    TweenService:Create(island, TweenInfo.new(0.44, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, 0, 0, 20)
-    }):Play()
+    -- Logo Holder
+    local logoHolder = create("Frame", {
+        Name = "LogoHolder",
+        Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(0, 8, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundTransparency = 1,
+        ZIndex = 3,
+        Parent = card
+    })
 
-    -- Spawn pulse breath animation on the dot
-    task.spawn(function()
-        for i = 1, 6 do
-            if not island or not island.Parent then break end
-            TweenService:Create(pulseDot, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(0, 12, 0, 12) }):Play()
-            task.wait(0.26)
-            TweenService:Create(pulseDot, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Size = UDim2.new(0, 8, 0, 8) }):Play()
-            task.wait(0.26)
+    if logoAsset then
+        create("ImageLabel", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Image = logoAsset,
+            ScaleType = Enum.ScaleType.Fit,
+            ZIndex = 4,
+            Parent = logoHolder
+        })
+    else
+        create("TextLabel", {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Font = Theme.FontBold,
+            Text = "SE",
+            TextColor3 = Color3.fromRGB(244, 114, 182),
+            TextSize = 12,
+            ZIndex = 4,
+            Parent = logoHolder
+        })
+    end
+
+    -- Text Stack (SECRETEXTPLOITS + @username)
+    local textContainer = create("Frame", {
+        Name = "TextContainer",
+        Size = UDim2.new(1, -38, 1, 0),
+        Position = UDim2.new(0, 36, 0, 0),
+        BackgroundTransparency = 1,
+        ZIndex = 3,
+        Parent = card
+    }, {
+        create("UIListLayout", {
+            FillDirection = Enum.FillDirection.Vertical,
+            VerticalAlignment = Enum.VerticalAlignment.Center,
+            Padding = UDim.new(0, 1)
+        }),
+        create("TextLabel", {
+            Name = "BrandTag",
+            Size = UDim2.new(1, 0, 0, 14),
+            BackgroundTransparency = 1,
+            Font = Theme.FontBold,
+            Text = "SECRETEXTPLOITS",
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextSize = 11,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 4
+        }),
+        create("TextLabel", {
+            Name = "UsernameTag",
+            Size = UDim2.new(1, 0, 0, 13),
+            BackgroundTransparency = 1,
+            Font = Theme.FontMedium,
+            Text = playerHandle,
+            TextColor3 = Color3.fromRGB(180, 185, 220),
+            TextSize = 10,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 4
+        })
+    })
+
+    -- 📍 Click to Teleport Handler
+    local function teleportToTarget()
+        local myChar = LocalPlayer.Character
+        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        local targetRoot = character and (character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Head"))
+
+        if myRoot and targetRoot then
+            if tagScale then
+                TweenService:Create(tagScale, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 0.9 }):Play()
+                task.delay(0.09, function()
+                    TweenService:Create(tagScale, TweenInfo.new(0.14, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+                end)
+            end
+
+            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+
+            local cam = workspace.CurrentCamera
+            local curDist = cam and math.floor((cam.CFrame.Position - targetRoot.Position).Magnitude) or 0
+            showNotification("Teleport", "Zu @" .. playerName .. " teleportiert!", true, "Distance: " .. curDist .. " studs")
+        end
+    end
+
+    card.MouseButton1Click:Connect(teleportToTarget)
+    card.Activated:Connect(teleportToTarget)
+
+    -- Hover Animations
+    card.MouseEnter:Connect(function()
+        if tagScale then
+            TweenService:Create(tagScale, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1.06 }):Play()
+        end
+        TweenService:Create(cardStroke, TweenInfo.new(0.18), { Transparency = 0.1, Color = Theme.VioletPrimary }):Play()
+    end)
+
+    card.MouseLeave:Connect(function()
+        if tagScale then
+            TweenService:Create(tagScale, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+        end
+        TweenService:Create(cardStroke, TweenInfo.new(0.18), { Transparency = 0.35, Color = Theme.VioletDark }):Play()
+    end)
+
+    -- 🔄 Dynamic Distance Minimization (matching screenshot media_1788371484816.jpg)
+    local isMinimized = false
+    local function updateDistance()
+        if not character or not character.Parent or not head or not head.Parent then return false end
+        local cam = workspace.CurrentCamera
+        if not cam then return true end
+
+        local dist = (cam.CFrame.Position - head.Position).Magnitude
+
+        if dist > 55 and not isMinimized then
+            isMinimized = true
+            TweenService:Create(bbg, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 38, 0, 38)
+            }):Play()
+            if cardCorner then
+                TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(1, 0) }):Play()
+            end
+            textContainer.Visible = false
+            logoHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+            TweenService:Create(logoHolder, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                Size = UDim2.new(0, 26, 0, 26)
+            }):Play()
+        elseif dist <= 55 and isMinimized then
+            isMinimized = false
+            TweenService:Create(bbg, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 156, 0, 38)
+            }):Play()
+            if cardCorner then
+                TweenService:Create(cardCorner, TweenInfo.new(0.25), { CornerRadius = UDim.new(0, 10) }):Play()
+            end
+            textContainer.Visible = true
+            logoHolder.AnchorPoint = Vector2.new(0, 0.5)
+            TweenService:Create(logoHolder, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0, 8, 0.5, 0),
+                Size = UDim2.new(0, 24, 0, 24)
+            }):Play()
+        end
+        return true
+    end
+
+    local tagData = {
+        Tag = bbg,
+        Update = updateDistance,
+        Character = character
+    }
+    table.insert(activeNametags, bbg)
+    table.insert(activeNametagData, tagData)
+
+    character.AncestryChanged:Connect(function(_, parent)
+        if not parent and bbg and bbg.Parent then
+            bbg:Destroy()
         end
     end)
 
-    -- Auto-retract after 3.2 seconds
-    activeIslandThread = task.delay(3.2, function()
-        if island and island.Parent then
-            local tw = TweenService:Create(island, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-                Position = UDim2.new(0.5, 0, 0, -70),
-                BackgroundTransparency = 1
-            })
-            tw:Play()
-            tw.Completed:Connect(function()
-                if activeIsland == island then activeIsland = nil end
-                island:Destroy()
+    return bbg
+end
+
+local function toggleNametags(state)
+    if state ~= nil then
+        isNametagsEnabled = state
+    else
+        isNametagsEnabled = not isNametagsEnabled
+    end
+
+    if isNametagsEnabled then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                createPlayerNametag(p.Character, p)
+            end
+            if not nametagCharAddedConns[p] then
+                nametagCharAddedConns[p] = p.CharacterAdded:Connect(function(char)
+                    task.wait(0.5)
+                    if isNametagsEnabled and p ~= LocalPlayer then createPlayerNametag(char, p) end
+                end)
+            end
+        end
+
+        if not nametagPlayerAddedConn then
+            nametagPlayerAddedConn = Players.PlayerAdded:Connect(function(p)
+                nametagCharAddedConns[p] = p.CharacterAdded:Connect(function(char)
+                    task.wait(0.5)
+                    if isNametagsEnabled and p ~= LocalPlayer then createPlayerNametag(char, p) end
+                end)
             end)
         end
-    end)
+
+        -- Start distance update loop (morphs between full banner and circular logo badge)
+        if not nametagLoopThread then
+            nametagLoopThread = task.spawn(function()
+                while isNametagsEnabled do
+                    for i = #activeNametagData, 1, -1 do
+                        local item = activeNametagData[i]
+                        if not item or not item.Tag or not item.Tag.Parent or not item.Update() then
+                            table.remove(activeNametagData, i)
+                        end
+                    end
+                    task.wait(0.1)
+                end
+                nametagLoopThread = nil
+            end)
+        end
+
+        showNotification("SecretExploits", "Overhead Nametags aktiviert! Klicke zum Teleportieren.", true)
+    else
+        for _, bbg in ipairs(activeNametags) do
+            if bbg and bbg.Parent then bbg:Destroy() end
+        end
+        activeNametags = {}
+        activeNametagData = {}
+
+        if nametagPlayerAddedConn then
+            nametagPlayerAddedConn:Disconnect()
+            nametagPlayerAddedConn = nil
+        end
+        for p, conn in pairs(nametagCharAddedConns) do
+            if conn then conn:Disconnect() end
+        end
+        nametagCharAddedConns = {}
+
+        showNotification("SecretExploits", "Overhead Nametags deaktiviert.", false)
+    end
 end
 
 -- ═══════════════════════════════════════════════════════════════════
@@ -2354,12 +2682,21 @@ openMainHubUI = function()
         end)
     end
 
+    local hubTargetPos = isProfileSideOpen and UDim2.new(0.5, -580, 0.5, -265) or UDim2.new(0.5, -410, 0.5, -265)
+    local profileTargetPos = UDim2.new(0.5, 260, 0.5, -265)
+    local profileTargetSize = UDim2.new(0, 320, 0, 530)
+    local hubTargetSize = UDim2.new(0, 820, 0, 530)
+
+    MainHubWindow.Position = hubTargetPos
+    MainHubWindow.Size = hubTargetSize
     MainHubWindow.Visible = true
     local hubScale = MainHubWindow:FindFirstChildOfClass("UIScale") or create("UIScale", { Scale = 0.001, Parent = MainHubWindow })
     hubScale.Scale = 0.001
     TweenService:Create(hubScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 
     if isProfileSideOpen and ProfileCard and ProfileCard.Parent then
+        ProfileCard.Position = profileTargetPos
+        ProfileCard.Size = profileTargetSize
         ProfileCard.Visible = true
         local profileScale = ProfileCard:FindFirstChildOfClass("UIScale") or create("UIScale", { Scale = 0.001, Parent = ProfileCard })
         profileScale.Scale = 0.001
@@ -3785,7 +4122,8 @@ end
 local function addButton(page, title, desc, icon, isPrimary, callback)
     local hasDesc = desc and tostring(desc) ~= ""
     local cardHeight = hasDesc and 48 or 40
-    local resolvedIcon = resolveIcon(icon)
+    local hasIcon = icon and tostring(icon) ~= ""
+    local resolvedIcon = hasIcon and resolveIcon(icon) or nil
 
     local card = create("TextButton", {
         Name = "ButtonCard_" .. tostring(title),
@@ -3801,26 +4139,30 @@ local function addButton(page, title, desc, icon, isPrimary, callback)
         create("UICorner", { CornerRadius = UDim.new(0, 10) }),
         create("UIScale", { Name = "CardScale", Scale = 1 })
     })
-    local cardStroke = addDualToneStroke(card, 1, 0.45, false)
+    local cardStroke = addDualToneStroke(card, 1, isPrimary and 0.25 or 0.45, isPrimary)
 
-    -- Clean Floating Icon (No bulky nested boxes!)
-    local iconImg = create("ImageLabel", {
-        Name = "ButtonIcon",
-        Size = UDim2.new(0, 18, 0, 18),
-        Position = UDim2.new(0, 12, 0.5, -9),
-        BackgroundTransparency = 1,
-        Image = resolvedIcon,
-        ImageColor3 = Theme.VioletLight,
-        Active = false,
-        ZIndex = 14,
-        Parent = card
-    })
+    -- Clean Floating Icon (Only rendered if an icon was specified!)
+    local iconImg = nil
+    if hasIcon and resolvedIcon then
+        iconImg = create("ImageLabel", {
+            Name = "ButtonIcon",
+            Size = UDim2.new(0, 18, 0, 18),
+            Position = UDim2.new(0, 12, 0.5, -9),
+            BackgroundTransparency = 1,
+            Image = resolvedIcon,
+            ImageColor3 = Theme.VioletLight,
+            Active = false,
+            ZIndex = 14,
+            Parent = card
+        })
+    end
 
-    -- Text Area (Generous width - ZERO squishing/truncation!)
+    -- Text Area (Full width alignment matching Toggles & Sliders when no icon)
+    local textOffsetLeft = (hasIcon and resolvedIcon) and 38 or 14
     local textContainer = create("Frame", {
         Name = "TextContainer",
-        Size = UDim2.new(1, -68, 1, 0),
-        Position = UDim2.new(0, 38, 0, 0),
+        Size = UDim2.new(1, -(textOffsetLeft + 30), 1, 0),
+        Position = UDim2.new(0, textOffsetLeft, 0, 0),
         BackgroundTransparency = 1,
         Active = false,
         ZIndex = 14,
@@ -3862,12 +4204,13 @@ local function addButton(page, title, desc, icon, isPrimary, callback)
         })
     end
 
-    -- Right Minimalist Chevron / Arrow
+    -- Right Minimalist Chevron pointing RIGHT (Rotation = -90)
     local chevron = create("ImageLabel", {
         Name = "Chevron",
-        Size = UDim2.new(0, 14, 0, 14),
+        Size = UDim2.new(0, 13, 0, 13),
         AnchorPoint = Vector2.new(1, 0.5),
         Position = UDim2.new(1, -12, 0.5, 0),
+        Rotation = -90,
         BackgroundTransparency = 1,
         Image = Icons.ChevronRight or "rbxassetid://10709790948",
         ImageColor3 = Theme.TextSecondary,
@@ -3882,14 +4225,18 @@ local function addButton(page, title, desc, icon, isPrimary, callback)
     card.MouseEnter:Connect(function()
         TweenService:Create(card, TweenInfo.new(0.18), { BackgroundColor3 = Theme.VioletDark, BackgroundTransparency = 0.25 }):Play()
         TweenService:Create(cardStroke, TweenInfo.new(0.18), { Transparency = 0.1, Color = Theme.VioletPrimary }):Play()
-        TweenService:Create(iconImg, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+        if iconImg then
+            TweenService:Create(iconImg, TweenInfo.new(0.18), { ImageColor3 = Color3.fromRGB(255, 255, 255) }):Play()
+        end
         TweenService:Create(chevron, TweenInfo.new(0.18), { Position = UDim2.new(1, -9, 0.5, 0), ImageColor3 = Theme.VioletLight }):Play()
     end)
 
     card.MouseLeave:Connect(function()
         TweenService:Create(card, TweenInfo.new(0.18), { BackgroundColor3 = Theme.GlassElevated, BackgroundTransparency = Theme.InnerTransparency }):Play()
         TweenService:Create(cardStroke, TweenInfo.new(0.18), { Transparency = 0.45, Color = Theme.VioletDark }):Play()
-        TweenService:Create(iconImg, TweenInfo.new(0.18), { ImageColor3 = Theme.VioletLight }):Play()
+        if iconImg then
+            TweenService:Create(iconImg, TweenInfo.new(0.18), { ImageColor3 = Theme.VioletLight }):Play()
+        end
         TweenService:Create(chevron, TweenInfo.new(0.18), { Position = UDim2.new(1, -12, 0.5, 0), ImageColor3 = Theme.TextSecondary }):Play()
     end)
 
@@ -4493,7 +4840,7 @@ function SecretLib:CreateWindow(config)
             btnConfig = btnConfig or {}
             local name = btnConfig.Name or btnConfig.Title or "Button"
             local desc = btnConfig.Desc or btnConfig.Description or btnConfig.Info
-            local icon = btnConfig.Icon or btnConfig.icon or Icons.ChevronRight
+            local icon = btnConfig.Icon or btnConfig.icon
             local isPrimary = btnConfig.Primary or false
             local cb = btnConfig.Callback or btnConfig.callback
             return addButton(page, name, desc, icon, isPrimary, cb)
@@ -4552,6 +4899,18 @@ function SecretLib:CreateWindow(config)
         toggleMenu()
     end
 
+    function Window:ToggleProfileCard(state)
+        if toggleSideProfile then
+            toggleSideProfile(state)
+        end
+    end
+
+    function Window:ToggleNametags(state)
+        if toggleNametags then
+            return toggleNametags(state)
+        end
+    end
+
     -- Launch Sequence (Key system vs Direct)
     if useKeySystem then
         if keySettings.Title then
@@ -4599,6 +4958,21 @@ end
 SecretLib.MakeWindow = SecretLib.CreateWindow
 SecretLib.CreateLib = SecretLib.CreateWindow
 SecretLib.Init = SecretLib.CreateWindow
+SecretLib.ToggleProfileCard = function(self, state)
+    if toggleSideProfile then
+        toggleSideProfile(state)
+    end
+end
+SecretLib.ToggleNametags = function(self, state)
+    if toggleNametags then
+        return toggleNametags(state)
+    end
+end
+SecretLib.CreateNametag = function(self, char, p)
+    if createPlayerNametag then
+        return createPlayerNametag(char, p)
+    end
+end
 
 print(string.format("[SecretExploits Hub] Multi-Language UI Library initialized (Locale: %s).", detectedLang))
 
